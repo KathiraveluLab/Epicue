@@ -46,3 +46,37 @@ pub mod reputation_tiers {
     pub const SILVER: u64 = 500;
     pub const GOLD: u64 = 1000;
 }
+
+pub const DECAY_PERIOD: u64 = 2592000; // 30 days
+pub const TRUST_RESET_PERIOD: u64 = 7776000; // 90 days
+
+/// Calculates and applies reputation decay based on inactivity, respecting a minimum floor
+pub fn apply_reputation_decay(ref reputation: InstitutionReputation, current_timestamp: u64, min_floor: u64) {
+    if reputation.last_activity_timestamp == 0 { return; }
+    if current_timestamp <= reputation.last_activity_timestamp { return; }
+    if reputation.reputation_credits <= min_floor { return; }
+
+    let elapsed = current_timestamp - reputation.last_activity_timestamp;
+    
+    // Multiplier reset for extreme inactivity
+    if elapsed > TRUST_RESET_PERIOD {
+        reputation.trust_multiplier = 1;
+    }
+
+    // Credits decay: 5% per 30 days
+    let periods = elapsed / DECAY_PERIOD;
+    if periods > 0 {
+        let decay_amount = (reputation.reputation_credits * 5 * periods) / 100;
+        
+        if decay_amount >= reputation.reputation_credits {
+            reputation.reputation_credits = min_floor;
+        } else {
+            let potential_new_credits = reputation.reputation_credits - decay_amount;
+            if potential_new_credits < min_floor {
+                reputation.reputation_credits = min_floor;
+            } else {
+                reputation.reputation_credits = potential_new_credits;
+            }
+        }
+    }
+}

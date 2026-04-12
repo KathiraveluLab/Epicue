@@ -74,6 +74,8 @@ pub trait IRegistry<TContractState> {
     fn claim_security_bounty(ref self: TContractState, byzantine_node: ContractAddress);
     fn get_bounty_balance(self: @TContractState, auditor: ContractAddress) -> u64;
     fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
+    fn set_reputation_floor(ref self: TContractState, new_floor: u64);
+    fn get_reputation_floor(self: @TContractState) -> u64;
 }
 
 // ──────────────────────────────────────────────
@@ -85,7 +87,7 @@ mod Registry {
     use super::{EpicueRecord, HealthRecord, domains};
     use epicue_core::core::access::assert_is_authority;
     use epicue_core::social::advocate::{Advocate};
-    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing};
+    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing, apply_reputation_decay};
     use epicue_core::core::types::{GeologicalRecord};
     use epicue_core::triad::validation::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
     use epicue_core::research::stats::{calculate_impact_score, calculate_collaboration_index, calculate_digital_reach_index};
@@ -99,7 +101,7 @@ mod Registry {
     use epicue_core::research::methodology::{MethodologyGuideline, calculate_scientific_visibility};
     use epicue_core::metrics::sustainability::{SustainabilityRecord, calculate_green_stature_gain, validate_industry_benchmark};
     use epicue_core::metrics::analytics::{calculate_sustainability_score, calculate_growth_rate};
-    use starknet::get_caller_address;
+    use starknet::{get_caller_address, get_block_timestamp};
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
 
@@ -155,6 +157,7 @@ mod Registry {
         sustainability_reports: Map<(ContractAddress, u64), SustainabilityRecord>,
         institution_report_counts: Map<ContractAddress, u64>,
         institutional_green_stature: Map<ContractAddress, u64>,
+        reputation_floor: u64,
     }
 
     // ── Events ─────────────────────────────────
@@ -214,6 +217,7 @@ mod Registry {
         self.authority_count.write(1);
         self.record_count.write(0);
         self.proposal_count.write(0);
+        self.reputation_floor.write(0);
     }
 
     // ── Implementation ──────────────────────────
@@ -291,9 +295,14 @@ mod Registry {
             let total_sev = self.domain_total_severity.read(domain);
             self.domain_total_severity.write(domain, total_sev + record.severity.into());
 
-            // Update Institutional Reputation
+            // Update Institutional Reputation with Decay
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
+            
+            // 1. Apply decay since last activity (respecting floor)
+            apply_reputation_decay(ref rep, get_block_timestamp(), self.reputation_floor.read());
+            
+            // 2. Add new credits
             rep.reputation_credits += calculate_credit_gain(record.severity, domain);
             rep.last_activity_timestamp = record.timestamp;
             self.reputations.write(caller, rep);
@@ -657,6 +666,7 @@ mod Registry {
             validate_geological_integrity(record.sample_depth, record.mineral_density);
             
             let subject_id = record.subject_id;
+            let timestamp = record.timestamp;
             
             // Professional Data Accountability: Pass the actual record metadata
             self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
@@ -664,7 +674,7 @@ mod Registry {
                 domain: domains::GEOSPATIAL,
                 category: 'geology_sample',
                 severity: 3_u8,
-                timestamp: record.timestamp,
+                timestamp: timestamp,
                 // In production, this would be a hash of the full sample data
                 data_hash: 'STARK_VERIFIED_GEO_HASH', 
             }));
@@ -675,10 +685,13 @@ mod Registry {
             let d_count = self.domain_counts.read(domains::GEOSPATIAL);
             self.domain_counts.write(domains::GEOSPATIAL, d_count + 1);
             
-            // Institutional Reputation
+            // Institutional Reputation with Decay
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
+            
+            apply_reputation_decay(ref rep, get_block_timestamp(), self.reputation_floor.read());
             rep.reputation_credits += 15; // Natural science bonus
+            rep.last_activity_timestamp = timestamp;
             self.reputations.write(caller, rep);
         }
 
@@ -687,7 +700,19 @@ mod Registry {
         }
 
         fn get_institution_reputation(self: @ContractState, address: ContractAddress) -> InstitutionReputation {
-            self.reputations.read(address)
+            let mut rep = self.reputations.read(address);
+            // Apply on-the-fly decay for accurate viewing
+            apply_reputation_decay(ref rep, get_block_timestamp(), self.reputation_floor.read());
+            rep
+        }
+
+        fn set_reputation_floor(ref self: ContractState, new_floor: u64) {
+            assert_is_authority(self.authorities.read(get_caller_address()));
+            self.reputation_floor.write(new_floor);
+        }
+
+        fn get_reputation_floor(self: @ContractState) -> u64 {
+            self.reputation_floor.read()
         }
 
         fn add_authority(ref self: ContractState, new_authority: ContractAddress) {
