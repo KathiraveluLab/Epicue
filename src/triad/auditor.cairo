@@ -63,12 +63,30 @@ pub fn calculate_weighted_audit(count: u64, disputes: u64) -> u16 {
     ratio.try_into().unwrap_or(100)
 }
 
+pub mod fault_severity {
+    pub const NONE: u8 = 0;
+    pub const MINOR: u8 = 1;
+    pub const MAJOR: u8 = 2;
+    pub const CRITICAL: u8 = 3;
+}
+
 /// Byzantine Fault Detection (1/3-BFT model)
-/// Flags nodes that consistently deviate from the validated consensus.
-pub fn detect_byzantine_fault(consent_deviation: u8, total_reviews: u64) -> bool {
-    // If deviation is high (> 30%) over a significant number of samples, it's a byzantine signal
-    if total_reviews >= 5 && consent_deviation > 30 {
-        return true;
+/// Flags nodes and categorizes their deviation severity.
+pub fn detect_byzantine_fault_severity(consent_deviation: u8, total_reviews: u64) -> u8 {
+    if total_reviews < 5 { return fault_severity::NONE; }
+
+    if consent_deviation > 80 {
+        fault_severity::CRITICAL
+    } else if consent_deviation > 50 {
+        fault_severity::MAJOR
+    } else if consent_deviation > 30 {
+        fault_severity::MINOR
+    } else {
+        fault_severity::NONE
     }
-    false
+}
+
+pub fn detect_byzantine_fault(consent_deviation: u8, total_reviews: u64) -> bool {
+    let severity = detect_byzantine_fault_severity(consent_deviation, total_reviews);
+    severity != fault_severity::NONE
 }

@@ -85,12 +85,12 @@ mod Registry {
     use super::{EpicueRecord, HealthRecord, domains};
     use epicue_core::core::access::assert_is_authority;
     use epicue_core::social::advocate::{Advocate};
-    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward};
+    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing};
     use epicue_core::core::types::{GeologicalRecord};
     use epicue_core::triad::validation::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
     use epicue_core::research::stats::{calculate_impact_score, calculate_collaboration_index, calculate_digital_reach_index};
     use epicue_core::research::peer_review::{ReviewSession, calculate_consensus_delta, verify_bft_quorum};
-    use epicue_core::triad::auditor::{detect_byzantine_fault};
+    use epicue_core::triad::auditor::{detect_byzantine_fault, detect_byzantine_fault_severity, fault_severity};
     use epicue_core::core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
     use epicue_core::triad::governance_voting::{Proposal, proposal_status};
     use epicue_core::core::schema::{DataSchema, validate_record_against_schema};
@@ -562,11 +562,15 @@ mod Registry {
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
             
-            // Detect Byzantine Fault Pattern
-            let is_byzantine = detect_byzantine_fault(40, 10); // Simulation: High deviation detected
-            assert(is_byzantine, 'No byzantine fault detected');
+            // Detect Byzantine Fault Pattern and Severity
+            // Simulation: 40% deviation detected in 10 reviews -> MINOR
+            let severity = detect_byzantine_fault_severity(40, 10); 
+            assert(severity != fault_severity::NONE, 'No byzantine fault detected');
             
-            let reward = calculate_bounty_reward(5, 1000); // Critical impact bounty
+            // GRADED ACTION: Slash based on severity
+            self._slash_byzantine_node(byzantine_node, severity);
+
+            let reward = calculate_bounty_reward(severity, 1000); // Reward scales with severity level trait
             rep.bounty_credits += reward;
             self.reputations.write(caller, rep);
         }
@@ -697,6 +701,27 @@ mod Registry {
 
         fn is_authority(self: @ContractState, address: ContractAddress) -> bool {
             self.authorities.read(address)
+        }
+    }
+
+    #[generate_trait]
+    impl InternalFunctions of InternalFunctionsTrait {
+        fn _slash_byzantine_node(ref self: ContractState, node: ContractAddress, severity: u8) {
+            // 1. Revoke Authority Status ONLY IF CRITICAL
+            if severity == fault_severity::CRITICAL {
+                if self.authorities.read(node) {
+                    self.authorities.write(node, false);
+                    let current_count = self.authority_count.read();
+                    if current_count > 0 {
+                        self.authority_count.write(current_count - 1);
+                    }
+                }
+            }
+
+            // 2. Reset or Reduce Reputation Metrics based on tier
+            let mut rep = self.reputations.read(node);
+            apply_graded_slashing(ref rep, severity);
+            self.reputations.write(node, rep);
         }
     }
 }

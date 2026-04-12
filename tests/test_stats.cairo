@@ -1,7 +1,7 @@
 use epicue_core::registry::{IRegistryDispatcher, IRegistryDispatcherTrait};
-use epicue_core::types::{EpicueRecord, domains};
+use epicue_core::core::types::{EpicueRecord, domains};
 use starknet::ContractAddress;
-use snforge_std::{declare, ContractClassTrait, DeclareResult, DeclareResultTrait, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{declare, ContractClassTrait, DeclareResult, start_cheat_caller_address, stop_cheat_caller_address};
 
 fn deploy_registry(initial_authority: ContractAddress) -> IRegistryDispatcher {
     let declare_result = declare("Registry").unwrap();

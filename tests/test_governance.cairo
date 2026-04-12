@@ -1,8 +1,8 @@
 use epicue_core::registry::{IRegistryDispatcher, IRegistryDispatcherTrait};
-use epicue_core::governance_voting::{proposal_status};
-use epicue_core::governance::actions;
+use epicue_core::triad::governance_voting::{proposal_status};
+use epicue_core::triad::governance::actions;
 use starknet::ContractAddress;
-use snforge_std::{declare, ContractClassTrait, DeclareResult, DeclareResultTrait, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{declare, ContractClassTrait, DeclareResult, start_cheat_caller_address, stop_cheat_caller_address};
 
 fn deploy_registry(initial_authority: ContractAddress) -> IRegistryDispatcher {
     let declare_result = declare("Registry").unwrap();

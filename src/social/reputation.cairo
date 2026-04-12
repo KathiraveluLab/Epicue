@@ -25,6 +25,22 @@ pub fn calculate_bounty_reward(severity: u8, impact: u64) -> u64 {
     (severity.into() * 50) + (impact / 100)
 }
 
+/// Penalizes a node for byzantine behavior by reducing reputation based on severity
+pub fn apply_graded_slashing(ref reputation: InstitutionReputation, severity: u8) {
+    if severity == 3 { // CRITICAL
+        reputation.reputation_credits = 0;
+        reputation.trust_multiplier = 1;
+    } else if severity == 2 { // MAJOR
+        reputation.reputation_credits = (reputation.reputation_credits * 50) / 100;
+        reputation.trust_multiplier = 1;
+    } else if severity == 1 { // MINOR
+        reputation.reputation_credits = (reputation.reputation_credits * 75) / 100;
+        if reputation.trust_multiplier > 1 {
+            reputation.trust_multiplier -= 1;
+        }
+    }
+}
+
 pub mod reputation_tiers {
     pub const BRONZE: u64 = 100;
     pub const SILVER: u64 = 500;
