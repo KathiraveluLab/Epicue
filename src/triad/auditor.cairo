@@ -62,3 +62,13 @@ pub fn calculate_weighted_audit(count: u64, disputes: u64) -> u16 {
     let ratio = (disputes * 100) / count;
     ratio.try_into().unwrap_or(100)
 }
+
+/// Byzantine Fault Detection (1/3-BFT model)
+/// Flags nodes that consistently deviate from the validated consensus.
+pub fn detect_byzantine_fault(consent_deviation: u8, total_reviews: u64) -> bool {
+    // If deviation is high (> 30%) over a significant number of samples, it's a byzantine signal
+    if total_reviews >= 5 && consent_deviation > 30 {
+        return true;
+    }
+    false
+}
