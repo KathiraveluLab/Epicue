@@ -30,8 +30,18 @@ _paper
 # Scarb / Starknet Foundry build artifacts
 .snfoundry_cache
 
+# Epicue Deployment Secrets
+deployment/*.env
+deployment/*.json
+deployment/*.log
+deployment/starknet-devnet
+deployment/*.tar.gz
+snfoundry_accounts.json
+starknet_open_zeppelin_accounts.json
+
 # Metadata exclusion
 Agent.md
 claude.md
 AGENTS.md
 CLAUDE.md
+.venv

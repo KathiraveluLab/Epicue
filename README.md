@@ -52,9 +52,9 @@ snforge test
 
 ### Deployment
 
-Epicue uses `starkli` for professional deployment on the Starknet Sepolia testnet.
+Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Guide](file:///home/pradeeban/Epicue/Deployment.md) for detailed instructions.
 
-1. **Configure Environment**: Copy the template and populate it with your RPC URL and account details.
+1. **Configure Environment**: Choose your target.
    ```bash
    cp deployment/sepolia.env.template deployment/.env
    # Edit deployment/.env with your secrets

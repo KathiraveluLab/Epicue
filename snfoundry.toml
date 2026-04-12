@@ -1,0 +1,10 @@
+# Starknet Foundry Configuration (EQUISYS Framework)
+# Profiles are selected via --profile. Secrets are sourced from local/public.env.
+
+[sncast.local]
+url = "http://localhost:5050"
+# account and private_key are passed via CLI or accounts-file in deploy.sh
+
+[sncast.public]
+url = "https://starknet-sepolia.g.alchemy.com/v2/YOUR_API_KEY"
+# account and keystore are passed via CLI in deploy.sh
