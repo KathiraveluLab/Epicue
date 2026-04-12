@@ -232,4 +232,35 @@ export const CONTRACT_ABI = [
     "outputs": [{ "type": "core::integer::u8" }],
     "state_mutability": "view"
   },
+  {
+    "type": "function",
+    "name": "claim_security_bounty",
+    "inputs": [
+      {
+        "name": "byzantine_node",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
+    "type": "function",
+    "name": "set_reputation_floor",
+    "inputs": [
+      {
+        "name": "new_floor",
+        "type": "core::integer::u64"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
+    "type": "function",
+    "name": "get_reputation_floor",
+    "inputs": [],
+    "outputs": [{ "type": "core::integer::u64" }],
+    "state_mutability": "view"
+  }
 ] as const;

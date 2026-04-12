@@ -12,7 +12,7 @@ Epicue is engineered for the untrusted Internet. Unlike typical centralized regi
 - **Median consensus**: Peer reviews utilize median-based aggregation to filter out Byzantine outliers and extreme data points.
 - **Security Bounties**: A built-in **Bounty Credit** system incentivizes specialized auditors to detect and flag Byzantine faults.
 
-## Professionalized Package Hierarchy
+## Package Hierarchy
 The codebase is structured into logical layers to facilitate inter-institutional scale-up:
 
 ```text
