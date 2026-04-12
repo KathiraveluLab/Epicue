@@ -7,8 +7,17 @@ use starknet::ContractAddress;
 // Interface
 // ──────────────────────────────────────────────
 
-#[starknet::interface]
-pub trait IRegistry<TContractState> {
+    /// ========================================================================
+    /// THE EQUISYS TRIAD (Section 3)
+    /// ========================================================================
+    /// The Registry serves as the central hub integrating the three core modules:
+    /// 1. The Validator (System Integrity): Enforces domain constraints and geo-fencing.
+    /// 2. The Auditor (Transparency): Performs post-computation analysis and anomaly detection.
+    /// 3. The Governor (Accountability): Manages authority pools and FATE scoring.
+    /// ========================================================================
+
+    #[starknet::interface]
+    pub trait IRegistry<TContractState> {
     // Phase-1 generalized entry point (kept for backwards compatibility)
     fn submit_record(ref self: TContractState, user_id: felt252, data_hash: felt252);
     fn get_record(self: @TContractState, user_id: felt252) -> felt252;
@@ -48,9 +57,16 @@ pub trait IRegistry<TContractState> {
     // Institutional Incentives
     fn get_institution_reputation(self: @TContractState, address: ContractAddress) -> epicue_core::social::reputation::InstitutionReputation;
 
-    // Research Statistics
+    // ========================================================================
+    // SCIENTIFIC PRODUCTIVITY METRICS (Section 7.1)
+    // ========================================================================
+
+    /// Impact Score: (count * aggregate_severity) / KAPPA
     fn get_domain_impact(self: @TContractState, domain: felt252) -> u64;
+
+    /// Collaboration Index: Ratio of unique authorities to total data commitments
     fn get_collaboration_index(self: @TContractState) -> u16;
+
     fn get_system_sustainability_score(self: @TContractState) -> u64;
 
     // Scientific Peer Review
