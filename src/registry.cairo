@@ -36,6 +36,11 @@ pub trait IRegistry<TContractState> {
     fn get_proposal(self: @TContractState, proposal_id: u64) -> epicue_core::governance_voting::Proposal;
     fn get_proposal_count(self: @TContractState) -> u64;
 
+    // Digital Inclusion & Delegation
+    fn submit_delegated_record(ref self: TContractState, record: EpicueRecord, subject_consent_hash: felt252);
+    fn register_advocate(ref self: TContractState, advocate: ContractAddress, name: felt252);
+    fn is_vetted_advocate(self: @TContractState, address: ContractAddress) -> bool;
+
     // Authority management
     fn add_authority(ref self: TContractState, new_authority: ContractAddress);
     fn is_authority(self: @TContractState, address: ContractAddress) -> bool;
@@ -52,6 +57,7 @@ mod Registry {
     use epicue_core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
     use epicue_core::validation::check_domain_constraints;
     use epicue_core::governance_voting::{Proposal, proposal_status, is_finalizable, get_quorum_threshold};
+    use epicue_core::advocate::{Advocate};
     use starknet::get_caller_address;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -77,6 +83,9 @@ mod Registry {
         proposals: Map<u64, Proposal>,
         proposal_count: u64,
         votes: Map<(u64, ContractAddress), bool>, // (proposal_id, voter) -> has_voted
+        // Digital Inclusion Storage
+        advocates: Map<ContractAddress, Advocate>,
+        advocate_count: u64,
     }
 
     // ── Events ─────────────────────────────────
@@ -87,6 +96,7 @@ mod Registry {
         RecordSubmitted: RecordSubmitted,
         HealthRecordSubmitted: HealthRecordSubmitted,
         EpicueRecordSubmitted: EpicueRecordSubmitted,
+        DelegatedSubmission: DelegatedSubmission,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -94,6 +104,16 @@ mod Registry {
         #[key]
         user_id: felt252,
         data_hash: felt252,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct DelegatedSubmission {
+        #[key]
+        subject_id: felt252,
+        #[key]
+        advocate: ContractAddress,
+        domain: felt252,
+        timestamp: u64,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -303,6 +323,68 @@ mod Registry {
 
         fn get_proposal_count(self: @ContractState) -> u64 {
             self.proposal_count.read()
+        }
+
+        fn submit_delegated_record(ref self: ContractState, record: EpicueRecord, subject_consent_hash: felt252) {
+            let caller = get_caller_address();
+            let mut advocate = self.advocates.read(caller);
+            assert(advocate.is_active, 'Caller not vetted advocate');
+            assert(subject_consent_hash != 0, 'Missing subject consent');
+
+            // Domain validation
+            check_domain_constraints(record.domain, record.category, record.severity);
+
+            let subject_id = record.subject_id;
+            let domain = record.domain;
+
+            // Emit delegation event
+            self.emit(Event::DelegatedSubmission(DelegatedSubmission {
+                subject_id,
+                advocate: caller,
+                domain,
+                timestamp: record.timestamp,
+            }));
+
+            // Emit standard record event
+            self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
+                subject_id,
+                domain,
+                category: record.category,
+                severity: record.severity,
+                timestamp: record.timestamp,
+                data_hash: record.data_hash,
+            }));
+
+            // Store record
+            self.epicue_records.write(subject_id, record);
+            
+            // Update counts
+            self.record_count.write(self.record_count.read() + 1);
+            let d_count = self.domain_counts.read(domain);
+            self.domain_counts.write(domain, d_count + 1);
+            
+            // Update advocate metrics
+            advocate.records_assisted += 1;
+            self.advocates.write(caller, advocate);
+        }
+
+        fn register_advocate(ref self: ContractState, advocate: ContractAddress, name: felt252) {
+            // Only authorities can register advocates (controlled via Governor)
+            assert_is_authority(self.authorities.read(get_caller_address()));
+            
+            let adv_struct = Advocate {
+                address: advocate,
+                name,
+                is_active: true,
+                records_assisted: 0,
+            };
+            
+            self.advocates.write(advocate, adv_struct);
+            self.advocate_count.write(self.advocate_count.read() + 1);
+        }
+
+        fn is_vetted_advocate(self: @ContractState, address: ContractAddress) -> bool {
+            self.advocates.read(address).is_active
         }
 
         fn add_authority(ref self: ContractState, new_authority: ContractAddress) {

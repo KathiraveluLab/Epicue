@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAccount, useContract, useSendTransaction, useReadContract } from "@starknet-react/core";
 import { WalletButton } from "@/components/WalletButton";
-import { ABI, CONTRACT_ADDRESS } from "@/lib/contract";
+import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/lib/contract";
 import { shortString } from "starknet";
 
 const DOMAINS = [
@@ -43,7 +43,7 @@ const CATEGORIES_BY_DOMAIN: Record<string, { value: string; label: string }[]> =
 
 function DomainOption({ value, label, icon, selected, onSelect }: { value: string; label: string; icon: string; selected: boolean; onSelect: (v: string) => void }) {
   const { data: meta } = useReadContract({
-    abi: ABI,
+    abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS,
     functionName: "get_domain_metadata",
     args: [shortString.encodeShortString(value)],
@@ -76,11 +76,11 @@ export default function SubmitPage() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  const { contract } = useContract({ abi: ABI, address: CONTRACT_ADDRESS });
+  const { contract } = useContract({ abi: CONTRACT_ABI, address: CONTRACT_ADDRESS });
   const { sendAsync } = useSendTransaction({});
 
   const { data: domainMeta } = useReadContract({
-    abi: ABI,
+    abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS,
     functionName: "get_domain_metadata",
     args: [shortString.encodeShortString(domain)],
@@ -248,6 +248,19 @@ export default function SubmitPage() {
             </form>
           )}
         </div>
+        {/* Digital Inclusion Callout */}
+        <section className="mt-12 p-8 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-emerald-400 mb-2">Digital Inclusion Advocate?</h3>
+            <p className="text-white/60">Helping someone who isn't digital-native? Use our simplified Inclusion Portal to submit data on their behalf securely.</p>
+          </div>
+          <Link 
+            href="/submit-delegated" 
+            className="px-8 py-4 bg-emerald-500 text-black font-bold rounded-2xl hover:bg-emerald-400 transition-all whitespace-nowrap"
+          >
+            Go to Inclusion Portal
+          </Link>
+        </section>
       </div>
     </main>
   );
