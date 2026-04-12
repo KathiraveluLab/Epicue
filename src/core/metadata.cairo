@@ -1,4 +1,4 @@
-use epicue_core::types::domains;
+use epicue_core::core::types::domains;
 
 #[derive(Drop, Serde, starknet::Store)]
 pub struct DomainMetadata {

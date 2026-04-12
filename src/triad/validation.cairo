@@ -1,7 +1,7 @@
 /// The Validator (System Integrity)
 /// Enforces business rules and geospatial boundaries as defined in EQUISYS Triad.
 
-use epicue_core::types::domains;
+use epicue_core::core::types::domains;
 
 #[starknet::interface]
 pub trait IValidation<TContractState> {

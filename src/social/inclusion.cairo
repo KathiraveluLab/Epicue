@@ -1,7 +1,7 @@
 /// Digital Inclusion Module
 /// Operationalizes the "Advocate-Proxy" mechanism for vulnerable groups.
 
-use epicue_core::stats::calculate_digital_reach_index;
+use epicue_core::research::stats::calculate_digital_reach_index;
 
 #[derive(Drop, Serde, starknet::Store)]
 pub struct InclusionSummary {

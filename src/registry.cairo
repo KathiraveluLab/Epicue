@@ -1,6 +1,6 @@
-use epicue_core::types::{EpicueRecord, HealthRecord, domains};
-use epicue_core::metadata;
-use epicue_core::validation;
+use epicue_core::core::types::{EpicueRecord, HealthRecord, domains};
+use epicue_core::core::metadata;
+use epicue_core::triad::validation;
 use starknet::ContractAddress;
 
 // ──────────────────────────────────────────────
@@ -33,7 +33,7 @@ pub trait IRegistry<TContractState> {
     fn propose_action(ref self: TContractState, target: ContractAddress, action_type: felt252) -> u64;
     fn vote_on_proposal(ref self: TContractState, proposal_id: u64, support: bool);
     fn execute_proposal(ref self: TContractState, proposal_id: u64);
-    fn get_proposal(self: @TContractState, proposal_id: u64) -> epicue_core::governance_voting::Proposal;
+    fn get_proposal(self: @TContractState, proposal_id: u64) -> epicue_core::triad::governance_voting::Proposal;
     fn get_proposal_count(self: @TContractState) -> u64;
 
     // Digital Inclusion & Delegation
@@ -42,11 +42,11 @@ pub trait IRegistry<TContractState> {
     fn is_vetted_advocate(self: @TContractState, address: ContractAddress) -> bool;
 
     // Natural Sciences (Geology)
-    fn submit_geological_record(ref self: TContractState, record: epicue_core::types::GeologicalRecord);
-    fn get_geological_record(self: @TContractState, subject_id: felt252) -> epicue_core::types::GeologicalRecord;
+    fn submit_geological_record(ref self: TContractState, record: epicue_core::core::types::GeologicalRecord);
+    fn get_geological_record(self: @TContractState, subject_id: felt252) -> epicue_core::core::types::GeologicalRecord;
 
     // Institutional Incentives
-    fn get_institution_reputation(self: @TContractState, address: ContractAddress) -> epicue_core::reputation::InstitutionReputation;
+    fn get_institution_reputation(self: @TContractState, address: ContractAddress) -> epicue_core::social::reputation::InstitutionReputation;
 
     // Research Statistics
     fn get_domain_impact(self: @TContractState, domain: felt252) -> u64;
@@ -65,11 +65,11 @@ pub trait IRegistry<TContractState> {
 
     // Advanced Phase-4 Primitives
     fn archive_audit_evidence(ref self: TContractState, evidence: epicue_core::audit_registry::AuditEvidence);
-    fn register_discovery_record(ref self: TContractState, record: epicue_core::discovery::ResearchDiscovery);
-    fn register_methodology(ref self: TContractState, guideline: epicue_core::methodology::MethodologyGuideline);
-    fn get_methodology(self: @TContractState, id: u64) -> epicue_core::methodology::MethodologyGuideline;
+    fn register_discovery_record(ref self: TContractState, record: epicue_core::research::discovery::ResearchDiscovery);
+    fn register_methodology(ref self: TContractState, guideline: epicue_core::research::methodology::MethodologyGuideline);
+    fn get_methodology(self: @TContractState, id: u64) -> epicue_core::research::methodology::MethodologyGuideline;
     fn get_digital_reach(self: @TContractState, domain: felt252) -> u16;
-    fn submit_sustainability_report(ref self: TContractState, report: epicue_core::sustainability::SustainabilityRecord);
+    fn submit_sustainability_report(ref self: TContractState, report: epicue_core::metrics::sustainability::SustainabilityRecord);
     fn get_sustainability_index(self: @TContractState, institution: ContractAddress) -> u64;
     fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
 }
@@ -81,21 +81,21 @@ pub trait IRegistry<TContractState> {
 #[starknet::contract]
 mod Registry {
     use super::{EpicueRecord, HealthRecord, domains};
-    use epicue_core::access::assert_is_authority;
-    use epicue_core::advocate::{Advocate};
-    use epicue_core::reputation::{InstitutionReputation, calculate_credit_gain};
-    use epicue_core::types::{GeologicalRecord};
-    use epicue_core::validation::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
-    use epicue_core::stats::{calculate_impact_score, calculate_collaboration_index, calculate_digital_reach_index};
-    use epicue_core::analytics::{calculate_sustainability_score, calculate_growth_rate};
-    use epicue_core::peer_review::{ReviewSession, calculate_consensus_delta};
-    use epicue_core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
-    use epicue_core::governance_voting::{Proposal, proposal_status};
-    use epicue_core::schema::{DataSchema, validate_record_against_schema};
-    use epicue_core::discovery::{ResearchDiscovery, filter_high_impact_domains};
+    use epicue_core::core::access::assert_is_authority;
+    use epicue_core::social::advocate::{Advocate};
+    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain};
+    use epicue_core::core::types::{GeologicalRecord};
+    use epicue_core::triad::validation::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
+    use epicue_core::research::stats::{calculate_impact_score, calculate_collaboration_index, calculate_digital_reach_index};
+    use epicue_core::metrics::analytics::{calculate_sustainability_score, calculate_growth_rate};
+    use epicue_core::research::peer_review::{ReviewSession, calculate_consensus_delta};
+    use epicue_core::core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
+    use epicue_core::triad::governance_voting::{Proposal, proposal_status};
+    use epicue_core::core::schema::{DataSchema, validate_record_against_schema};
+    use epicue_core::research::discovery::{ResearchDiscovery, filter_high_impact_domains};
     use epicue_core::audit_registry::{AuditEvidence, verify_evidence_integrity};
-    use epicue_core::methodology::{MethodologyGuideline, calculate_scientific_visibility};
-    use epicue_core::sustainability::{SustainabilityRecord, calculate_green_stature_gain, validate_industry_benchmark};
+    use epicue_core::research::methodology::{MethodologyGuideline, calculate_scientific_visibility};
+    use epicue_core::metrics::sustainability::{SustainabilityRecord, calculate_green_stature_gain, validate_industry_benchmark};
     use starknet::get_caller_address;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -118,7 +118,7 @@ mod Registry {
         // On-chain aggregations for EQUISYS domains
         domain_counts: Map<felt252, u64>,
         // Governance Voting Storage
-        proposals: Map<u64, epicue_core::governance_voting::Proposal>,
+        proposals: Map<u64, epicue_core::triad::governance_voting::Proposal>,
         proposal_count: u64,
         votes: Map<(u64, ContractAddress), bool>, // (proposal_id, voter) -> has_voted
         // Digital Inclusion Storage
@@ -324,11 +324,11 @@ mod Registry {
         }
 
         fn get_compliance_score(self: @ContractState) -> u8 {
-            epicue_core::governance::calculate_fate_score(self.record_count.read(), self.authority_count.read())
+            epicue_core::triad::governance::calculate_fate_score(self.record_count.read(), self.authority_count.read())
         }
 
         fn get_compliance_label(self: @ContractState) -> felt252 {
-            epicue_core::governance::get_compliance_label(self.get_compliance_score())
+            epicue_core::triad::governance::get_compliance_label(self.get_compliance_score())
         }
 
         fn propose_action(ref self: ContractState, target: ContractAddress, action_type: felt252) -> u64 {
@@ -371,7 +371,7 @@ mod Registry {
             self.votes.write((proposal_id, caller), true);
             
             // Check if threshold reached
-            if epicue_core::governance_voting::is_finalizable(@proposal, self.authority_count.read()) {
+            if epicue_core::triad::governance_voting::is_finalizable(@proposal, self.authority_count.read()) {
                 if proposal.votes_for > proposal.votes_against {
                     proposal.status = proposal_status::APPROVED;
                 } else {
@@ -386,7 +386,7 @@ mod Registry {
             let mut proposal = self.proposals.read(proposal_id);
             assert(proposal.status == proposal_status::APPROVED, 'Not approved');
             
-            if proposal.action_type == epicue_core::governance::actions::ADD_AUTHORITY {
+            if proposal.action_type == epicue_core::triad::governance::actions::ADD_AUTHORITY {
                 if !self.authorities.read(proposal.target) {
                     self.authorities.write(proposal.target, true);
                     self.authority_count.write(self.authority_count.read() + 1);
@@ -398,7 +398,7 @@ mod Registry {
             self.proposals.write(proposal_id, proposal);
         }
 
-        fn get_proposal(self: @ContractState, proposal_id: u64) -> epicue_core::governance_voting::Proposal {
+        fn get_proposal(self: @ContractState, proposal_id: u64) -> epicue_core::triad::governance_voting::Proposal {
             self.proposals.read(proposal_id)
         }
 

@@ -1,7 +1,7 @@
 /// The Auditor (Transparency)
 /// Performs post-computation analysis and anomaly detection as defined in EQUISYS Triad.
 
-use epicue_core::types::EpicueRecord;
+use epicue_core::core::types::EpicueRecord;
 
 #[derive(Drop, Serde, starknet::Store)]
 pub struct AuditReport {

@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use epicue_core::auditor::AuditReport;
+use epicue_core::triad::auditor::AuditReport;
 
 #[derive(Drop, Serde, starknet::Store)]
 pub struct AuditEvidence {
