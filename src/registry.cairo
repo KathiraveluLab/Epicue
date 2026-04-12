@@ -29,6 +29,13 @@ pub trait IRegistry<TContractState> {
     fn get_compliance_score(self: @TContractState) -> u8;
     fn get_compliance_label(self: @TContractState) -> felt252;
 
+    // Governance Voting
+    fn propose_action(ref self: TContractState, target: ContractAddress, action_type: felt252) -> u64;
+    fn vote_on_proposal(ref self: TContractState, proposal_id: u64, support: bool);
+    fn execute_proposal(ref self: TContractState, proposal_id: u64);
+    fn get_proposal(self: @TContractState, proposal_id: u64) -> epicue_core::governance_voting::Proposal;
+    fn get_proposal_count(self: @TContractState) -> u64;
+
     // Authority management
     fn add_authority(ref self: TContractState, new_authority: ContractAddress);
     fn is_authority(self: @TContractState, address: ContractAddress) -> bool;
@@ -44,6 +51,7 @@ mod Registry {
     use epicue_core::access::assert_is_authority;
     use epicue_core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
     use epicue_core::validation::check_domain_constraints;
+    use epicue_core::governance_voting::{Proposal, proposal_status, is_finalizable, get_quorum_threshold};
     use starknet::get_caller_address;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -65,6 +73,10 @@ mod Registry {
         record_count: u64,
         // On-chain aggregations for EQUISYS domains
         domain_counts: Map<felt252, u64>,
+        // Governance Voting Storage
+        proposals: Map<u64, Proposal>,
+        proposal_count: u64,
+        votes: Map<(u64, ContractAddress), bool>, // (proposal_id, voter) -> has_voted
     }
 
     // ── Events ─────────────────────────────────
@@ -112,6 +124,7 @@ mod Registry {
         self.authorities.write(initial_authority, true);
         self.authority_count.write(1);
         self.record_count.write(0);
+        self.proposal_count.write(0);
     }
 
     // ── Implementation ──────────────────────────
@@ -139,14 +152,7 @@ mod Registry {
             // Verifiable Policy: Move validation on-chain
             check_domain_constraints(domains::HEALTHCARE, record.service_category, record.severity);
 
-            let patient_id = record.patient_id;
-            self.health_records.write(patient_id, record);
-            
-            // Increment global and domain count
-            self.record_count.write(self.record_count.read() + 1);
-            let d_count = self.domain_counts.read(domains::HEALTHCARE);
-            self.domain_counts.write(domains::HEALTHCARE, d_count + 1);
-
+            // Emit event before move
             self.emit(Event::HealthRecordSubmitted(HealthRecordSubmitted {
                 patient_id: record.patient_id,
                 service_category: record.service_category,
@@ -154,6 +160,14 @@ mod Registry {
                 timestamp: record.timestamp,
                 data_hash: record.data_hash,
             }));
+
+            let patient_id = record.patient_id;
+            self.health_records.write(patient_id, record);
+            
+            // Increment global and domain count
+            self.record_count.write(self.record_count.read() + 1);
+            let d_count = self.domain_counts.read(domains::HEALTHCARE);
+            self.domain_counts.write(domains::HEALTHCARE, d_count + 1);
         }
 
         fn get_health_record(self: @ContractState, patient_id: felt252) -> HealthRecord {
@@ -170,13 +184,7 @@ mod Registry {
             let subject_id = record.subject_id;
             let domain = record.domain;
             
-            self.epicue_records.write(subject_id, record);
-            
-            // Increment global and domain count
-            self.record_count.write(self.record_count.read() + 1);
-            let d_count = self.domain_counts.read(domain);
-            self.domain_counts.write(domain, d_count + 1);
-
+            // Emit event before move
             self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
                 subject_id,
                 domain,
@@ -185,6 +193,13 @@ mod Registry {
                 timestamp: record.timestamp,
                 data_hash: record.data_hash,
             }));
+
+            self.epicue_records.write(subject_id, record);
+            
+            // Increment global and domain count
+            self.record_count.write(self.record_count.read() + 1);
+            let d_count = self.domain_counts.read(domain);
+            self.domain_counts.write(domain, d_count + 1);
         }
 
         fn get_epicue_record(self: @ContractState, subject_id: felt252) -> EpicueRecord {
@@ -215,7 +230,83 @@ mod Registry {
             epicue_core::governance::get_compliance_label(self.get_compliance_score())
         }
 
+        fn propose_action(ref self: ContractState, target: ContractAddress, action_type: felt252) -> u64 {
+            let caller = get_caller_address();
+            assert_is_authority(self.authorities.read(caller));
+            
+            let id = self.proposal_count.read() + 1;
+            let proposal = Proposal {
+                id,
+                proposer: caller,
+                target,
+                action_type,
+                votes_for: 1, // Proposer automatically votes for
+                votes_against: 0,
+                status: proposal_status::PENDING,
+                end_block: 0, // Simplified for now
+            };
+            
+            self.proposals.write(id, proposal);
+            self.proposal_count.write(id);
+            self.votes.write((id, caller), true);
+            
+            id
+        }
+
+        fn vote_on_proposal(ref self: ContractState, proposal_id: u64, support: bool) {
+            let caller = get_caller_address();
+            assert_is_authority(self.authorities.read(caller));
+            
+            let mut proposal = self.proposals.read(proposal_id);
+            assert(proposal.status == proposal_status::PENDING, 'Proposal not active');
+            assert(!self.votes.read((proposal_id, caller)), 'Already voted');
+            
+            if support {
+                proposal.votes_for += 1;
+            } else {
+                proposal.votes_against += 1;
+            }
+            
+            self.votes.write((proposal_id, caller), true);
+            
+            // Check if threshold reached
+            if is_finalizable(@proposal, self.authority_count.read()) {
+                if proposal.votes_for > proposal.votes_against {
+                    proposal.status = proposal_status::APPROVED;
+                } else {
+                    proposal.status = proposal_status::REJECTED;
+                }
+            }
+            
+            self.proposals.write(proposal_id, proposal);
+        }
+
+        fn execute_proposal(ref self: ContractState, proposal_id: u64) {
+            let mut proposal = self.proposals.read(proposal_id);
+            assert(proposal.status == proposal_status::APPROVED, 'Not approved');
+            
+            if proposal.action_type == epicue_core::governance::actions::ADD_AUTHORITY {
+                if !self.authorities.read(proposal.target) {
+                    self.authorities.write(proposal.target, true);
+                    self.authority_count.write(self.authority_count.read() + 1);
+                }
+            }
+            // Logic for REMOVE_AUTH can be added here
+            
+            proposal.status = 'EXECUTED';
+            self.proposals.write(proposal_id, proposal);
+        }
+
+        fn get_proposal(self: @ContractState, proposal_id: u64) -> Proposal {
+            self.proposals.read(proposal_id)
+        }
+
+        fn get_proposal_count(self: @ContractState) -> u64 {
+            self.proposal_count.read()
+        }
+
         fn add_authority(ref self: ContractState, new_authority: ContractAddress) {
+            // Deprecated in favor of voting, but kept for legacy auths or simplified testing
             assert_is_authority(self.authorities.read(get_caller_address()));
             if !self.authorities.read(new_authority) {
                 self.authorities.write(new_authority, true);

@@ -4,8 +4,11 @@ use snforge_std::{
 };
 use epicue_core::registry::{IRegistryDispatcher, IRegistryDispatcherTrait};
 use epicue_core::types::{HealthRecord, EpicueRecord, domains};
-use starknet::{ContractAddress, felt252_conversions::IntoFelt252};
 use core::result::ResultTrait;
+use epicue_core::auditor::{perform_basic_audit, get_audit_summary, calculate_weighted_severity};
+use epicue_core::governance::get_compliance_label;
+use epicue_core::validation::check_domain_constraints;
+use starknet::ContractAddress;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -76,12 +79,13 @@ fn test_health_record_integrity() {
     let dispatcher = deploy_registry(authority);
     let record = sample_health_record();
 
+    let pid = record.patient_id;
     start_cheat_caller_address(dispatcher.contract_address, authority);
     dispatcher.submit_health_record(record);
     stop_cheat_caller_address(dispatcher.contract_address);
 
-    let stored = dispatcher.get_health_record(record.patient_id);
-    assert(stored.patient_id == record.patient_id, 'Integrity check failed');
+    let stored = dispatcher.get_health_record(pid);
+    assert(stored.patient_id == pid, 'Integrity check failed');
 }
 
 // ── Phase-3: Multi-Domain EQUISYS Verification ────────────────────────────────
@@ -137,7 +141,7 @@ fn test_fate_compliance_scoring_logic() {
     dispatcher.add_authority(auth2);
     
     // Submit records to increase score
-    let mut i = 0;
+    let mut i: felt252 = 0;
     while i < 15 {
         dispatcher.submit_record(i.into(), 'data');
         i += 1;
@@ -211,12 +215,14 @@ fn test_epicue_record_recovery() {
     let dispatcher = deploy_registry(authority);
     let record = sample_epicue_record(domains::WATER);
 
+    let sid = record.subject_id;
+    let hash = record.data_hash;
     start_cheat_caller_address(dispatcher.contract_address, authority);
     dispatcher.submit_epicue_record(record);
     stop_cheat_caller_address(dispatcher.contract_address);
 
-    let stored = dispatcher.get_epicue_record(record.subject_id);
-    assert(stored.data_hash == record.data_hash, 'Data recovery mismatch');
+    let stored = dispatcher.get_epicue_record(sid);
+    assert(stored.data_hash == hash, 'Data recovery mismatch');
     assert(stored.domain == domains::WATER, 'Domain recovery mismatch');
 }
 
@@ -228,7 +234,7 @@ fn test_accountability_scaling() {
     start_cheat_caller_address(dispatcher.contract_address, authority);
     let mut i = 2;
     while i <= 11 {
-        let auth: ContractAddress = i.into();
+        let auth: ContractAddress = (i).try_into().unwrap();
         dispatcher.add_authority(auth);
         i += 1;
     };
@@ -264,7 +270,6 @@ fn test_auditor_basic_checks() {
 
 #[test]
 fn test_auditor_weighted_severity() {
-    use epicue_core::auditor::calculate_weighted_severity;
     
     // 3 reports with average severity (4+4+1)/3 = 3
     let avg = calculate_weighted_severity(3, 9);
@@ -295,7 +300,6 @@ fn test_governance_authority_retention() {
 
 #[test]
 fn test_verifiable_transparency_labels() {
-    use epicue_core::governance::get_compliance_label;
     
     assert(get_compliance_label(95) == 'Excellent', 'Label excellent fail');
     assert(get_compliance_label(75) == 'Good', 'Label good fail');
@@ -312,7 +316,6 @@ fn test_equisys_broad_domain_constants() {
 
 #[test]
 fn test_validation_logic_steel_audit() {
-    use epicue_core::validation::check_domain_constraints;
     
     // Valid audit
     check_domain_constraints(domains::INDUSTRY, 'steel_audit', 3_u8);
@@ -342,7 +345,6 @@ fn test_authority_escalation() {
 
 #[test]
 fn test_validation_logic_education() {
-    use epicue_core::validation::check_domain_constraints;
     
     // Valid student feedback
     check_domain_constraints(domains::EDUCATION, 'student_feedback', 2_u8);
@@ -354,7 +356,6 @@ fn test_validation_logic_education() {
 #[test]
 #[should_panic(expected: ('Integrity report min priority', ))]
 fn test_validation_logic_education_failure() {
-    use epicue_core::validation::check_domain_constraints;
     
     // Should fail: academic integrity < 3
     check_domain_constraints(domains::EDUCATION, 'academic_integrity', 2_u8);
@@ -374,6 +375,7 @@ fn test_education_record_aggregation() {
         data_hash: 'edu_hash',
     };
 
+    let subject_id = record.subject_id;
     start_cheat_caller_address(dispatcher.contract_address, authority);
     dispatcher.submit_epicue_record(record);
     stop_cheat_caller_address(dispatcher.contract_address);

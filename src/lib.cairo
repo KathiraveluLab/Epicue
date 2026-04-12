@@ -6,3 +6,4 @@ pub mod validation;
 pub mod governance;
 pub mod auditor;
 pub mod registry;
+pub mod governance_voting;

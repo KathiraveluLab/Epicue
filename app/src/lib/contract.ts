@@ -4,7 +4,7 @@
 export const CONTRACT_ADDRESS =
   "0x0000000000000000000000000000000000000000000000000000000000000000"; // TODO: replace after deployment
 
-export const ABI = [
+export const CONTRACT_ABI = [
   {
     type: "function",
     name: "submit_health_record",
@@ -76,13 +76,44 @@ export const ABI = [
   },
   {
     type: "function",
-    name: "submit_record",
+    name: "get_compliance_score",
+    inputs: [],
+    outputs: [{ type: "core::integer::u8" }],
+    state_mutability: "view",
+  },
+  {
+    type: "function",
+    name: "propose_action",
     inputs: [
-      { name: "user_id", type: "core::felt252" },
-      { name: "data_hash", type: "core::felt252" },
+      { name: "target", type: "core::starknet::contract_address::ContractAddress" },
+      { name: "action_type", type: "core::felt252" },
+    ],
+    outputs: [{ type: "core::integer::u64" }],
+    state_mutability: "external",
+  },
+  {
+    type: "function",
+    name: "vote_on_proposal",
+    inputs: [
+      { name: "proposal_id", type: "core::integer::u64" },
+      { name: "support", type: "core::bool" },
     ],
     outputs: [],
     state_mutability: "external",
+  },
+  {
+    type: "function",
+    name: "execute_proposal",
+    inputs: [{ name: "proposal_id", type: "core::integer::u64" }],
+    outputs: [],
+    state_mutability: "external",
+  },
+  {
+    type: "function",
+    name: "get_proposal_count",
+    inputs: [],
+    outputs: [{ type: "core::integer::u64" }],
+    state_mutability: "view",
   },
   {
     type: "function",
@@ -107,53 +138,5 @@ export const ABI = [
     ],
     outputs: [{ type: "core::bool" }],
     state_mutability: "view",
-  },
-  {
-    type: "struct",
-    name: "epicue_core::registry::HealthRecord",
-    members: [
-      { name: "patient_id", type: "core::felt252" },
-      { name: "service_category", type: "core::felt252" },
-      { name: "severity", type: "core::integer::u8" },
-      { name: "timestamp", type: "core::integer::u64" },
-      { name: "data_hash", type: "core::felt252" },
-    ],
-  },
-  {
-    type: "struct",
-    name: "epicue_core::registry::EpicueRecord",
-    members: [
-      { name: "subject_id", type: "core::felt252" },
-      { name: "domain", type: "core::felt252" },
-      { name: "category", type: "core::felt252" },
-      { name: "severity", type: "core::integer::u8" },
-      { name: "timestamp", type: "core::integer::u64" },
-      { name: "data_hash", type: "core::felt252" },
-    ],
-  },
-  {
-    type: "event",
-    name: "epicue_core::registry::Registry::HealthRecordSubmitted",
-    kind: "struct",
-    members: [
-      { name: "patient_id", type: "core::felt252", kind: "key" },
-      { name: "service_category", type: "core::felt252", kind: "data" },
-      { name: "severity", type: "core::integer::u8", kind: "data" },
-      { name: "timestamp", type: "core::integer::u64", kind: "data" },
-      { name: "data_hash", type: "core::felt252", kind: "data" },
-    ],
-  },
-  {
-    type: "event",
-    name: "epicue_core::registry::Registry::EpicueRecordSubmitted",
-    kind: "struct",
-    members: [
-      { name: "subject_id", type: "core::felt252", kind: "key" },
-      { name: "domain", type: "core::felt252", kind: "data" },
-      { name: "category", type: "core::felt252", kind: "data" },
-      { name: "severity", type: "core::integer::u8", kind: "data" },
-      { name: "timestamp", type: "core::integer::u64", kind: "data" },
-      { name: "data_hash", type: "core::felt252", kind: "data" },
-    ],
   },
 ] as const;
