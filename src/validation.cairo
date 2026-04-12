@@ -26,5 +26,14 @@ pub fn check_domain_constraints(domain: felt252, category: felt252, severity: u8
         if category == 'academic_integrity' {
             assert(severity >= 3_u8, 'Integrity report min priority');
         }
+    } else if domain == domains::GEOSPATIAL {
+        // Site-boundary check (e.g., 40.0 - 42.0 N, -75.0 - -73.0 W)
+        assert(severity <= 5_u8, 'Invalid geo severity');
     }
+}
+
+pub fn check_geospatial_bounds(lat: i32, lon: i32) {
+    // Verifiable site boundary verification (e.g., deg * 100)
+    assert(lat >= 4000 && lat <= 4200, 'Outside research boundary');
+    assert(lon >= -7500 && lon <= -7300, 'Outside research boundary');
 }

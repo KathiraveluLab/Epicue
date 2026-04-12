@@ -139,4 +139,62 @@ export const CONTRACT_ABI = [
     outputs: [{ type: "core::bool" }],
     state_mutability: "view",
   },
+  {
+    "type": "function",
+    "name": "get_domain_impact",
+    "inputs": [
+      {
+        "name": "domain",
+        "type": "core::felt252"
+      }
+    ],
+    "outputs": [{ "type": "core::integer::u64" }],
+    "state_mutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "get_collaboration_index",
+    "inputs": [],
+    "outputs": [{ "type": "core::integer::u16" }],
+    "state_mutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "get_total_verified_records",
+    "inputs": [],
+    "outputs": [{ "type": "core::integer::u64" }],
+    "state_mutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "get_geological_record",
+    "inputs": [
+      {
+        "name": "subject_id",
+        "type": "core::felt252"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "epicue_core::types::GeologicalRecord"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "get_institution_reputation",
+    "inputs": [
+      {
+        "name": "address",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "epicue_core::reputation::InstitutionReputation"
+      }
+    ],
+    "state_mutability": "view"
+  },
 ] as const;

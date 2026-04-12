@@ -24,4 +24,16 @@ pub mod domains {
     pub const WATER: felt252 = 'water';
     pub const INDUSTRY: felt252 = 'industry';
     pub const EDUCATION: felt252 = 'education';
+    pub const GEOSPATIAL: felt252 = 'geospatial';
+}
+
+/// Specialized Natural Science record for Geology.
+#[derive(Drop, Serde, starknet::Store)]
+pub struct GeologicalRecord {
+    pub subject_id: felt252,
+    pub latitude: i32,  // Fixed point: deg * 100
+    pub longitude: i32, // Fixed point: deg * 100
+    pub sample_depth: u32,
+    pub mineral_density: u16,
+    pub timestamp: u64,
 }

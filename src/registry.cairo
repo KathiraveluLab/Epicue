@@ -41,6 +41,17 @@ pub trait IRegistry<TContractState> {
     fn register_advocate(ref self: TContractState, advocate: ContractAddress, name: felt252);
     fn is_vetted_advocate(self: @TContractState, address: ContractAddress) -> bool;
 
+    // Natural Sciences (Geology)
+    fn submit_geological_record(ref self: TContractState, record: epicue_core::types::GeologicalRecord);
+    fn get_geological_record(self: @TContractState, subject_id: felt252) -> epicue_core::types::GeologicalRecord;
+
+    // Institutional Incentives
+    fn get_institution_reputation(self: @TContractState, address: ContractAddress) -> epicue_core::reputation::InstitutionReputation;
+
+    // Research Statistics
+    fn get_domain_impact(self: @TContractState, domain: felt252) -> u64;
+    fn get_collaboration_index(self: @TContractState) -> u16;
+
     // Authority management
     fn add_authority(ref self: TContractState, new_authority: ContractAddress);
     fn is_authority(self: @TContractState, address: ContractAddress) -> bool;
@@ -54,10 +65,11 @@ pub trait IRegistry<TContractState> {
 mod Registry {
     use super::{EpicueRecord, HealthRecord, domains};
     use epicue_core::access::assert_is_authority;
-    use epicue_core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
-    use epicue_core::validation::check_domain_constraints;
-    use epicue_core::governance_voting::{Proposal, proposal_status, is_finalizable, get_quorum_threshold};
     use epicue_core::advocate::{Advocate};
+    use epicue_core::reputation::{InstitutionReputation, calculate_credit_gain};
+    use epicue_core::types::{GeologicalRecord};
+    use epicue_core::validation::{check_domain_constraints, check_geospatial_bounds};
+    use epicue_core::stats::{calculate_impact_score, calculate_collaboration_index};
     use starknet::get_caller_address;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -86,6 +98,12 @@ mod Registry {
         // Digital Inclusion Storage
         advocates: Map<ContractAddress, Advocate>,
         advocate_count: u64,
+        // Research Stats Storage
+        domain_total_severity: Map<felt252, u64>,
+        // Natural Sciences Storage
+        geological_records: Map<felt252, GeologicalRecord>,
+        // Institutional Reputation Storage
+        reputations: Map<ContractAddress, InstitutionReputation>,
     }
 
     // ── Events ─────────────────────────────────
@@ -181,6 +199,10 @@ mod Registry {
                 data_hash: record.data_hash,
             }));
 
+            // Update Research Stats before move
+            let total_sev = self.domain_total_severity.read(domains::HEALTHCARE);
+            self.domain_total_severity.write(domains::HEALTHCARE, total_sev + record.severity.into());
+
             let patient_id = record.patient_id;
             self.health_records.write(patient_id, record);
             
@@ -213,6 +235,17 @@ mod Registry {
                 timestamp: record.timestamp,
                 data_hash: record.data_hash,
             }));
+
+            // Update Research Stats before move
+            let total_sev = self.domain_total_severity.read(domain);
+            self.domain_total_severity.write(domain, total_sev + record.severity.into());
+
+            // Update Institutional Reputation
+            let caller = get_caller_address();
+            let mut rep = self.reputations.read(caller);
+            rep.reputation_credits += calculate_credit_gain(record.severity, domain);
+            rep.last_activity_timestamp = record.timestamp;
+            self.reputations.write(caller, rep);
 
             self.epicue_records.write(subject_id, record);
             
@@ -325,6 +358,18 @@ mod Registry {
             self.proposal_count.read()
         }
 
+        fn get_domain_impact(self: @ContractState, domain: felt252) -> u64 {
+            let count = self.domain_counts.read(domain);
+            let total_severity = self.domain_total_severity.read(domain);
+            calculate_impact_score(count, total_severity)
+        }
+
+        fn get_collaboration_index(self: @ContractState) -> u16 {
+            let auth_count = self.authority_count.read();
+            let record_count = self.record_count.read();
+            calculate_collaboration_index(auth_count, record_count)
+        }
+
         fn submit_delegated_record(ref self: ContractState, record: EpicueRecord, subject_consent_hash: felt252) {
             let caller = get_caller_address();
             let mut advocate = self.advocates.read(caller);
@@ -385,6 +430,39 @@ mod Registry {
 
         fn is_vetted_advocate(self: @ContractState, address: ContractAddress) -> bool {
             self.advocates.read(address).is_active
+        }
+
+        fn submit_geological_record(ref self: ContractState, record: GeologicalRecord) {
+            assert_is_authority(self.authorities.read(get_caller_address()));
+            
+            // Verifiable Spatial Validation
+            check_geospatial_bounds(record.latitude, record.longitude);
+            
+            let subject_id = record.subject_id;
+            
+            // Emit Event (Simplified for prototype)
+            self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
+                subject_id,
+                domain: domains::GEOSPATIAL,
+                category: 'geology_sample',
+                severity: 3_u8,
+                timestamp: record.timestamp,
+                data_hash: 'geological_verifiable_hash',
+            }));
+            
+            self.geological_records.write(subject_id, record);
+            
+            // Update stats
+            let d_count = self.domain_counts.read(domains::GEOSPATIAL);
+            self.domain_counts.write(domains::GEOSPATIAL, d_count + 1);
+        }
+
+        fn get_geological_record(self: @ContractState, subject_id: felt252) -> GeologicalRecord {
+            self.geological_records.read(subject_id)
+        }
+
+        fn get_institution_reputation(self: @ContractState, address: ContractAddress) -> InstitutionReputation {
+            self.reputations.read(address)
         }
 
         fn add_authority(ref self: ContractState, new_authority: ContractAddress) {
