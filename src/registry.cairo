@@ -68,6 +68,7 @@ pub trait IRegistry<TContractState> {
     fn register_discovery_record(ref self: TContractState, record: epicue_core::discovery::ResearchDiscovery);
     fn register_methodology(ref self: TContractState, guideline: epicue_core::methodology::MethodologyGuideline);
     fn get_methodology(self: @TContractState, id: u64) -> epicue_core::methodology::MethodologyGuideline;
+    fn get_digital_reach(self: @TContractState, domain: felt252) -> u16;
     fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
 }
 
@@ -83,7 +84,7 @@ mod Registry {
     use epicue_core::reputation::{InstitutionReputation, calculate_credit_gain};
     use epicue_core::types::{GeologicalRecord};
     use epicue_core::validation::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
-    use epicue_core::stats::{calculate_impact_score, calculate_collaboration_index};
+    use epicue_core::stats::{calculate_impact_score, calculate_collaboration_index, calculate_digital_reach_index};
     use epicue_core::analytics::{calculate_sustainability_score, calculate_growth_rate};
     use epicue_core::peer_review::{ReviewSession, calculate_consensus_delta};
     use epicue_core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
@@ -142,6 +143,8 @@ mod Registry {
         // Methodology Registry Storage
         methodologies: Map<u64, MethodologyGuideline>,
         methodology_count: u64,
+        // Inclusion Storage
+        delegated_domain_counts: Map<felt252, u64>,
     }
 
     // ── Events ─────────────────────────────────
@@ -497,9 +500,14 @@ mod Registry {
             self.methodologies.write(id, guideline);
             self.methodology_count.write(id);
         }
-
         fn get_methodology(self: @ContractState, id: u64) -> MethodologyGuideline {
             self.methodologies.read(id)
+        }
+
+        fn get_digital_reach(self: @ContractState, domain: felt252) -> u16 {
+            let delegated = self.delegated_domain_counts.read(domain);
+            let total = self.domain_counts.read(domain);
+            calculate_digital_reach_index(delegated, total)
         }
 
         /// Digital Inclusion: Advocate-Proxy Mechanism (Section 6)
@@ -542,6 +550,10 @@ mod Registry {
             self.record_count.write(self.record_count.read() + 1);
             let d_count = self.domain_counts.read(domain);
             self.domain_counts.write(domain, d_count + 1);
+            
+            // Inclusion Tracking
+            let current_delegated = self.delegated_domain_counts.read(domain);
+            self.delegated_domain_counts.write(domain, current_delegated + 1);
             
             // Update advocate metrics
             advocate.records_assisted += 1;

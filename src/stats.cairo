@@ -26,6 +26,16 @@ pub fn calculate_domain_density(domain_count: u64, total_count: u64) -> u16 {
     density.try_into().unwrap_or(0)
 }
 
+/// Digital Reach Index (DRI): Section 6.1
+/// (Delegated Records / Total Records) * 10000 (e.g., 500 = 5.00%)
+pub fn calculate_digital_reach_index(delegated: u64, total: u64) -> u16 {
+    if total == 0 { 0 }
+    else {
+        let index = (delegated * 10000) / total;
+        index.try_into().unwrap_or(10000)
+    }
+}
+
 /// Institutional Integrity Score based on historical disputes
 pub fn calculate_integrity_score(success_rate: u8, age: u64) -> u64 {
     (success_rate.into() * 10) + (age / 1000)
