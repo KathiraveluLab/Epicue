@@ -15,24 +15,19 @@ fn deploy_registry(initial_authority: ContractAddress) -> IRegistryDispatcher {
     IRegistryDispatcher { contract_address }
 }
 
-fn governance_add_authority(dispatcher: IRegistryDispatcher, proposer: ContractAddress, new_auth: ContractAddress) {
+fn governance_add_authority(dispatcher: IRegistryDispatcher, proposer: ContractAddress, new_auth: ContractAddress, voter2: ContractAddress) {
     start_cheat_caller_address(dispatcher.contract_address, proposer);
     let prop_id = dispatcher.propose_action(new_auth, 'ADD_AUTH');
+    let proposal = dispatcher.get_proposal(prop_id);
     
-    // Proposer automatically votes 'for' in propose_action.
-    // If there's only 1 authority, we need to transition status to APPROVED.
-    // In registry.cairo, propose_action doesn't transition status.
-    // We'll call vote_on_proposal with a DIFFERENT authority or fix the logic.
-    // For now, let's just make dispatcher.execute_proposal directly if approved.
+    if proposal.status == 'PENDING' {
+        stop_cheat_caller_address(dispatcher.contract_address);
+        start_cheat_caller_address(dispatcher.contract_address, voter2);
+        dispatcher.vote_on_proposal(prop_id, true);
+        stop_cheat_caller_address(dispatcher.contract_address);
+        start_cheat_caller_address(dispatcher.contract_address, proposer);
+    }
     
-    // Optimization: In our test, if n=1, threshold=1. proposer is 1 vote.
-    // But we need to call something that sets status = APPROVED.
-    // I'll add a second authority first if needed, or just update propose_action.
-    
-    // Actually, I'll just manually finalize it for the test if status is still PENDING.
-    // Wait, the dispatcher can't manually set status.
-    
-    // I'll fix Registry.propose_action to check for finalization.
     dispatcher.execute_proposal(prop_id);
     stop_cheat_caller_address(dispatcher.contract_address);
 }
@@ -76,7 +71,7 @@ fn test_bounty_collection_simulation() {
     assert(initial_bounty == 0, 'Initial bounty should be 0');
 
     // Add node as authority via governance
-    governance_add_authority(dispatcher, auditor, byzantine_node);
+    governance_add_authority(dispatcher, auditor, byzantine_node, auditor);
 
     start_cheat_caller_address(dispatcher.contract_address, auditor);
     dispatcher.claim_security_bounty(byzantine_node);
@@ -94,7 +89,7 @@ fn test_methodology_registration_bft_failure() {
     let dispatcher = deploy_registry(auth1);
 
     // Add auth2 via governance
-    governance_add_authority(dispatcher, auth1, auth2);
+    governance_add_authority(dispatcher, auth1, auth2, auth1); // n=1 -> n=2
 
     use epicue_core::research::methodology::{MethodologyGuideline};
     let guideline = MethodologyGuideline {
@@ -108,14 +103,11 @@ fn test_methodology_registration_bft_failure() {
         impact_metric: 10
     };
     
-    // Attempt registration with ONLY 1 endorsement (from author)
-    // We need 2f+1. With n=2, f=0, so required = 1.
-    // Wait, let's add a third authority to make n=3, f=0, required=1.
-    // Let's add 4 authorities: n=4, f=1, required=2*1+1 = 3.
+    // Add auth3 and auth4 via governance (now n=2 and n=3)
     let auth3: ContractAddress = 0x333.try_into().unwrap();
     let auth4: ContractAddress = 0x444.try_into().unwrap();
-    governance_add_authority(dispatcher, auth1, auth3);
-    governance_add_authority(dispatcher, auth1, auth4);
+    governance_add_authority(dispatcher, auth1, auth3, auth2); // n=2 -> n=3 (threshold 2, auth1 prop, auth2 votes)
+    governance_add_authority(dispatcher, auth1, auth4, auth2); // n=3 -> n=4 (threshold 2, auth1 prop, auth2 votes)
 
     // Now n=4. Quorum required = 3.
     // Endorsements: auth2 (1)
@@ -140,7 +132,7 @@ fn test_graded_slashing_minor() {
     let deviant_node: ContractAddress = 0x444.try_into().unwrap();
     let dispatcher = deploy_registry(auth1);
 
-    governance_add_authority(dispatcher, auth1, deviant_node);
+    governance_add_authority(dispatcher, auth1, deviant_node, auth1);
 
     // 2. Bootstrap deviant_node with reputation
     start_cheat_caller_address(dispatcher.contract_address, deviant_node);

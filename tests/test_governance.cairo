@@ -21,9 +21,10 @@ fn test_successful_governance_flow() {
     let auth2: ContractAddress = 0x222.try_into().unwrap();
     let dispatcher = deploy_registry(auth1);
 
-    // Auth1 adds Auth2 manually first (legacy/bootstrap)
+    // Auth1 adds Auth2 via governance (auto-approves since n=1)
     start_cheat_caller_address(dispatcher.contract_address, auth1);
-    dispatcher.add_authority(auth2);
+    let prop1 = dispatcher.propose_action(auth2, actions::ADD_AUTHORITY);
+    dispatcher.execute_proposal(prop1);
     stop_cheat_caller_address(dispatcher.contract_address);
 
     // Auth1 proposes new Auth3
@@ -32,12 +33,12 @@ fn test_successful_governance_flow() {
     let prop_id = dispatcher.propose_action(auth3, actions::ADD_AUTHORITY);
     stop_cheat_caller_address(dispatcher.contract_address);
 
-    // Auth2 votes for Auth3
+    // Auth2 votes for Auth3 (n=2, threshold=2)
     start_cheat_caller_address(dispatcher.contract_address, auth2);
     dispatcher.vote_on_proposal(prop_id, true);
     stop_cheat_caller_address(dispatcher.contract_address);
 
-    // Proposal should be approved (2 auths, 2 votes for, threshold = 2)
+    // Proposal should be approved
     let proposal = dispatcher.get_proposal(prop_id);
     assert(proposal.status == proposal_status::APPROVED, 'Should be approved');
 
@@ -52,13 +53,20 @@ fn test_successful_governance_flow() {
 #[should_panic(expected: ('Already voted', ))]
 fn test_prevent_double_voting() {
     let auth1: ContractAddress = 0x111.try_into().unwrap();
+    let auth2: ContractAddress = 0x222.try_into().unwrap();
     let dispatcher = deploy_registry(auth1);
 
-    let auth2: ContractAddress = 0x222.try_into().unwrap();
+    // 1. Add auth2 via governance so n=2
     start_cheat_caller_address(dispatcher.contract_address, auth1);
-    let prop_id = dispatcher.propose_action(auth2, actions::ADD_AUTHORITY);
+    let prop1 = dispatcher.propose_action(auth2, actions::ADD_AUTHORITY);
+    dispatcher.execute_proposal(prop1);
     
-    // Auth1 attempts to vote again
-    dispatcher.vote_on_proposal(prop_id, true);
+    // 2. Propose auth3
+    let auth3: ContractAddress = 0x333.try_into().unwrap();
+    let prop2 = dispatcher.propose_action(auth3, actions::ADD_AUTHORITY);
+    
+    // Auth1 (proposer) attempts to vote again. 
+    // Status is 'PENDING' because n=2, votes_for=1, threshold=2.
+    dispatcher.vote_on_proposal(prop2, true);
     stop_cheat_caller_address(dispatcher.contract_address);
 }

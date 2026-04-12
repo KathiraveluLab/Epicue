@@ -14,6 +14,21 @@ fn deploy_registry(initial_authority: ContractAddress) -> IRegistryDispatcher {
     IRegistryDispatcher { contract_address }
 }
 
+fn governance_add_authority(dispatcher: IRegistryDispatcher, proposer: ContractAddress, new_auth: ContractAddress, voter2: ContractAddress) {
+    start_cheat_caller_address(dispatcher.contract_address, proposer);
+    let prop_id = dispatcher.propose_action(new_auth, 'ADD_AUTH');
+    let proposal = dispatcher.get_proposal(prop_id);
+    if proposal.status == 'PENDING' {
+        stop_cheat_caller_address(dispatcher.contract_address);
+        start_cheat_caller_address(dispatcher.contract_address, voter2);
+        dispatcher.vote_on_proposal(prop_id, true);
+        stop_cheat_caller_address(dispatcher.contract_address);
+        start_cheat_caller_address(dispatcher.contract_address, proposer);
+    }
+    dispatcher.execute_proposal(prop_id);
+    stop_cheat_caller_address(dispatcher.contract_address);
+}
+
 #[test]
 fn test_research_impact_calculation() {
     let authority: ContractAddress = 0x111.try_into().unwrap();
@@ -48,11 +63,11 @@ fn test_collaboration_index() {
     let auth2: ContractAddress = 0x222.try_into().unwrap();
     let dispatcher = deploy_registry(auth1);
 
-    // Add another authority
-    start_cheat_caller_address(dispatcher.contract_address, auth1);
-    dispatcher.add_authority(auth2);
+    // Add another authority via governance
+    governance_add_authority(dispatcher, auth1, auth2, auth1);
     
     // Both authorities submit records
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
     let rec1 = EpicueRecord {
         subject_id: 'sub1', domain: domains::INDUSTRY, category: 'test',
         severity: 1_u8, timestamp: 1000, data_hash: 'hash1',

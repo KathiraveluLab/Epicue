@@ -6,10 +6,11 @@ Epicue is a Starknet-native framework designed to provide a mathematically verif
 
 ---
 
-## Byzantine Fault Tolerance (BFT)
-Epicue is engineered for the untrusted Internet. Unlike typical centralized registries, Epicue incorporates **Scientific BFT Consensus** ($n=3f+1$):
-- **Quorum-Based Integrity**: High-stakes operations (e.g., Methodology Registration) require a threshold quorum of Authority signatures.
-- **Median consensus**: Peer reviews utilize median-based aggregation to filter out Byzantine outliers and extreme data points.
+## Byzantine Fault Tolerance (BFT) & Governance
+Epicue is engineered for the untrusted Internet. Unlike typical centralized registries, Epicue incorporates **Scientific BFT Resilience** ($n=3f+1$):
+- **2f+1 Scientific Quorum**: New methodologies and research protocols require cryptographically-verified endorsements from a $2f+1$ institutional majority.
+- **Decentralized Governance Locks**: All administrative actions (authority management, reputation floors) are strictly locked behind the EQUISYS Governor. Modifications are only executable via successful voting proposals.
+- **Graded Byzantine Slashing**: Institutional penalties are categorized by severity (Minor, Major, Critical). Critical faults result in architectural revocation of authority.
 - **Security Bounties**: A built-in **Bounty Credit** system incentivizes specialized auditors to detect and flag Byzantine faults.
 
 ## Package Hierarchy

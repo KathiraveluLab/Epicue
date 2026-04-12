@@ -14,6 +14,17 @@ fn deploy_registry(initial_authority: ContractAddress) -> IRegistryDispatcher {
     IRegistryDispatcher { contract_address }
 }
 
+fn governance_set_floor(dispatcher: IRegistryDispatcher, proposer: ContractAddress, new_floor: u128) {
+    start_cheat_caller_address(dispatcher.contract_address, proposer);
+    // Encoding the floor (u128) as a felt252 address for the proposal target
+    let target_felt: felt252 = new_floor.into();
+    let target_addr: ContractAddress = target_felt.try_into().unwrap();
+    let prop_id = dispatcher.propose_action(target_addr, 'SET_FLOOR');
+    // For n=1, it will be auto-approved
+    dispatcher.execute_proposal(prop_id);
+    stop_cheat_caller_address(dispatcher.contract_address);
+}
+
 #[test]
 fn test_reputation_decay_over_time() {
     let auth: ContractAddress = 0x111.try_into().unwrap();
@@ -38,15 +49,12 @@ fn test_reputation_decay_over_time() {
     assert(initial_rep == 50, 'Initial rep mismatch');
 
     // 2. Jump time by 31 days (DECAY_PERIOD is 30 days)
-    // 30 days = 2592000 seconds
     let jump = 2592000 + 1000;
     start_cheat_block_timestamp(dispatcher.contract_address, t0 + jump);
 
     // 3. Check decayed reputation (View call)
     let decayed_rep = dispatcher.get_institution_reputation(auth).reputation_credits;
     
-    // Deduction = 5% of 50 = 2.5 -> 2 (integer division)
-    // Expected: 50 - 2 = 48
     assert(decayed_rep == 48, 'Decay not applied correctly');
 }
 
@@ -75,8 +83,6 @@ fn test_reputation_cumulative_decay() {
 
     let decayed_rep = dispatcher.get_institution_reputation(auth).reputation_credits;
     
-    // Deduction = 2 periods * 5% = 10% of 50 = 5
-    // Expected: 50 - 5 = 45
     assert(decayed_rep == 45, 'Cumulative decay mismatch');
 }
 
@@ -87,12 +93,12 @@ fn test_reputation_floor_enforcement() {
 
     let t0 = 100;
     start_cheat_block_timestamp(dispatcher.contract_address, t0);
-    start_cheat_caller_address(dispatcher.contract_address, auth);
     
-    // 1. Set floor to 40
-    dispatcher.set_reputation_floor(40);
+    // 1. Set floor to 40 via governance
+    governance_set_floor(dispatcher, auth, 40);
     assert(dispatcher.get_reputation_floor() == 40, 'Floor not set');
 
+    start_cheat_caller_address(dispatcher.contract_address, auth);
     // 2. Gain 50 rep
     let record = EpicueRecord {
         subject_id: 0x1,
