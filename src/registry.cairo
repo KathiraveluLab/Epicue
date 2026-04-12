@@ -62,6 +62,11 @@ pub trait IRegistry<TContractState> {
     fn register_schema(ref self: TContractState, domain: felt252, field_count: u8);
     fn add_authority(ref self: TContractState, new_authority: ContractAddress);
     fn is_authority(self: @TContractState, address: ContractAddress) -> bool;
+
+    // Advanced Phase-4 Primitives
+    fn archive_audit_evidence(ref self: TContractState, evidence: epicue_core::audit_registry::AuditEvidence);
+    fn register_discovery_record(ref self: TContractState, record: epicue_core::discovery::ResearchDiscovery);
+    fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
 }
 
 // ──────────────────────────────────────────────
@@ -77,8 +82,10 @@ mod Registry {
     use epicue_core::types::{GeologicalRecord};
     use epicue_core::validation::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
     use epicue_core::stats::{calculate_impact_score, calculate_collaboration_index};
-    use epicue_core::analytics::{calculate_sustainability_score, DomainTrend, calculate_growth_rate};
-    use epicue_core::peer_review::{ReviewSession, calculate_consensus_delta, ReviewerCommittee};
+    use epicue_core::analytics::{calculate_sustainability_score, calculate_growth_rate};
+    use epicue_core::peer_review::{ReviewSession, calculate_consensus_delta};
+    use epicue_core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
+    use epicue_core::governance_voting::{Proposal, proposal_status};
     use epicue_core::schema::{DataSchema, validate_record_against_schema};
     use epicue_core::discovery::{ResearchDiscovery, filter_high_impact_domains};
     use epicue_core::audit_registry::{AuditEvidence, verify_evidence_integrity};
@@ -104,7 +111,7 @@ mod Registry {
         // On-chain aggregations for EQUISYS domains
         domain_counts: Map<felt252, u64>,
         // Governance Voting Storage
-        proposals: Map<u64, Proposal>,
+        proposals: Map<u64, epicue_core::governance_voting::Proposal>,
         proposal_count: u64,
         votes: Map<(u64, ContractAddress), bool>, // (proposal_id, voter) -> has_voted
         // Digital Inclusion Storage
@@ -348,7 +355,7 @@ mod Registry {
             self.votes.write((proposal_id, caller), true);
             
             // Check if threshold reached
-            if is_finalizable(@proposal, self.authority_count.read()) {
+            if epicue_core::governance_voting::is_finalizable(@proposal, self.authority_count.read()) {
                 if proposal.votes_for > proposal.votes_against {
                     proposal.status = proposal_status::APPROVED;
                 } else {
@@ -375,7 +382,7 @@ mod Registry {
             self.proposals.write(proposal_id, proposal);
         }
 
-        fn get_proposal(self: @ContractState, proposal_id: u64) -> Proposal {
+        fn get_proposal(self: @ContractState, proposal_id: u64) -> epicue_core::governance_voting::Proposal {
             self.proposals.read(proposal_id)
         }
 
@@ -436,6 +443,7 @@ mod Registry {
                 field_count,
                 is_deprecated: false,
                 authority: get_caller_address(),
+                schema_hash: 0, // Initialized to zero, updated via specialized governance
             };
             self.schemas.write(domain, schema);
         }
@@ -445,7 +453,7 @@ mod Registry {
             let id = self.archive_count.read() + 1;
             
             // Verifiable integrity check before archiving
-            if verify_evidence_integrity(evidence, 8) {
+            if verify_evidence_integrity(@evidence, 8) {
                 self.audit_archives.write(id, evidence);
                 self.archive_count.write(id);
             }

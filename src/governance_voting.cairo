@@ -26,6 +26,9 @@ pub fn get_quorum_threshold(authority_count: u64) -> u64 {
 
 pub fn is_finalizable(proposal: @Proposal, authority_count: u64) -> bool {
     let threshold = get_quorum_threshold(authority_count);
+    let total_votes = *proposal.votes_for + *proposal.votes_against;
+    total_votes >= threshold
+}
 /// Advanced Governance Primitives for "Sustainable Societies"
 #[derive(Drop, Serde, starknet::Store)]
 pub struct VetoPower {

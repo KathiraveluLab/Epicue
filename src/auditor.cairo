@@ -4,6 +4,7 @@ use epicue_core::types::EpicueRecord;
 pub struct AuditReport {
     pub total_processed: u64,
     pub anomalies_detected: u64,
+    pub risk_score: u8,
     pub last_audit_timestamp: u64,
 }
 

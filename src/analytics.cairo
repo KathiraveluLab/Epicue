@@ -47,14 +47,72 @@ pub struct DomainTrend {
 
 pub fn calculate_growth_rate(prev: u64, current: u64) -> i16 {
     if prev == 0 { return 100; }
-    let diff = (current as i128 - prev as i128);
-    let rate = (diff * 100) / prev.into();
+    let current_i128: i128 = current.into();
+    let prev_i128: i128 = prev.into();
+    let diff = current_i128 - prev_i128;
+    let rate = (diff * 100_i128) / prev_i128;
     rate.try_into().unwrap_or(0)
 }
 
 pub fn predict_future_impact(current: u64, growth_rate: i16) -> u64 {
-    let growth = (current.into() * growth_rate.into()) / 100;
-    (current.into() + growth).try_into().unwrap_or(current)
+    let current_i128: i128 = current.into();
+    let growth_rate_i128: i128 = growth_rate.into();
+    let growth = (current_i128 * growth_rate_i128) / 100_i128;
+    (current_i128 + growth).try_into().unwrap_or(current)
+}
+
+/// Statistical Primitives for Research Accuracy (EPICUE Phase 4)
+pub fn calculate_variance(data: Array<u64>, mean: u64) -> u64 {
+    if data.len() < 2 { return 0; }
+    let mut sum_sq_diff: u128 = 0;
+    let mut i = 0;
+    while i < data.len() {
+        let val = *data.at(i);
+        let diff: u128 = if val > mean { (val - mean).into() } else { (mean - val).into() };
+        sum_sq_diff += diff * diff;
+        i += 1;
+    };
+    (sum_sq_diff / (data.len().into() - 1)).try_into().unwrap_or(0)
+}
+
+/// Approximate Square Root for Standard Deviation
+pub fn sqrt(n: u64) -> u64 {
+    if n == 0 { return 0; }
+    let mut x = n;
+    let mut y = (x + 1) / 2;
+    while y < x {
+        x = y;
+        y = (x + n / x) / 2;
+    };
+    x
+}
+
+pub fn calculate_standard_deviation(data: Array<u64>, mean: u64) -> u64 {
+    let var = calculate_variance(data, mean);
+    sqrt(var)
+}
+
+/// Z-Score for Outlier Detection
+pub fn calculate_z_score(value: u64, mean: u64, std_dev: u64) -> i16 {
+    if std_dev == 0 { return 0; }
+    let val_i128: i128 = value.into();
+    let mean_i128: i128 = mean.into();
+    let std_dev_i128: i128 = std_dev.into();
+    let diff = val_i128 - mean_i128;
+    let score = (diff * 10_i128) / std_dev_i128; // x10 for precision
+    score.try_into().unwrap_or(0)
+}
+
+/// Simple Moving Average
+pub fn calculate_sma(window: Array<u64>) -> u64 {
+    if window.len() == 0 { return 0; }
+    let mut total: u64 = 0;
+    let mut i = 0;
+    while i < window.len() {
+        total += *window.at(i);
+        i += 1;
+    };
+    total / window.len().into()
 }
 
 /// Verifiable Equity Distribution Check (SDG 10)

@@ -32,35 +32,35 @@ pub fn get_default_domain_desc(domain: felt252) -> felt252 {
 
 pub fn get_fate_pillar_desc(pillar: felt252) -> felt252 {
     if pillar == 'Fairness' { 
-        'Equitable L2 access for all societal strata.' 
+        'Equitable L2 access for all' 
     } else if pillar == 'Accountability' { 
-        'STARK-proven institutional data accountability.' 
+        'STARK-proven accountability' 
     } else if pillar == 'Transparency' { 
-        'Verifiable Cairo logic and open public service registries.' 
+        'Verifiable Cairo logic' 
     } else if pillar == 'Ethics' { 
-        'Privacy-preserving blinded identifiers with subject consent.' 
+        'Privacy with subject consent' 
     } else { 
-        'FATE compliance verified across all domains.' 
+        'FATE compliance verified' 
     }
 }
 
 pub fn get_long_domain_desc(domain: felt252) -> felt252 {
     if domain == domains::HEALTHCARE {
-        'Verifiable healthcare reporting for equity in fetal health monitoring.'
+        'Verifiable healthcare reports'
     } else if domain == domains::WATER {
-        'On-chain water quality monitoring for sustainable sanitation audits.'
+        'On-chain water monitoring'
     } else if domain == domains::GEOSPATIAL {
-        'Integrating natural science data models with STARK-based spatial proofs.'
+        'STARK-based spatial proofs'
     } else {
-        'Interdisciplinary research study within the EQUISYS framework.'
+        'EQUISYS framework research'
     }
 }
 
 /// Verification context for inter-institutional collaboration
 pub fn get_collaboration_justification(auth_count: u64) -> felt252 {
     if auth_count > 5 {
-        'Broad inter-institutional scientific consensus established.'
+        'Scientific consensus reached'
     } else {
-        'Initial multi-authority collaborative audit phase.'
+        'Multi-authority audit phase'
     }
 }
