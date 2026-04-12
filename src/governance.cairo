@@ -19,8 +19,8 @@ pub fn calculate_fate_score(record_count: u64, auth_count: u64) -> u8 {
     let mut score = 50_u8; // Base score
     
     // Fairness: More reports generally indicate better system engagement
-    if record_count > 1000 { score += 20; }
-    else if record_count > 100 { score += 10; }
+    if record_count > 100 { score += 20; }
+    else if record_count > 10 { score += 10; }
     
     // Accountability: Balanced number of authorities
     if auth_count >= 2 && auth_count <= 10 { score += 30; }

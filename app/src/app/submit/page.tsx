@@ -8,9 +8,9 @@ import { ABI, CONTRACT_ADDRESS } from "@/lib/contract";
 import { shortString } from "starknet";
 
 const DOMAINS = [
-  { value: "healthcare", label: "Healthcare", icon: "🏥" },
-  { value: "water", label: "Water Quality", icon: "🚰" },
-  { value: "industry", label: "Industrial Traceability", icon: "🏗️" },
+  { value: "healthcare", label: "Healthcare", icon: "[HC]" },
+  { value: "water", label: "Water Quality", icon: "[WQ]" },
+  { value: "industry", label: "Industrial Traceability", icon: "[IT]" },
 ];
 
 const CATEGORIES_BY_DOMAIN: Record<string, { value: string; label: string }[]> = {
@@ -149,7 +149,7 @@ export default function SubmitPage() {
             </div>
           ) : status === "success" ? (
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-8 text-center">
-              <div className="text-4xl mb-4">✅</div>
+              <div className="text-4xl mb-4">SUCCESS</div>
               <h2 className="text-white font-semibold text-lg mb-2">Record Submitted</h2>
               <p className="text-white/40 text-sm mb-4">
                 Your report for <span className="text-white">{domain}</span> has been STARK-verified.

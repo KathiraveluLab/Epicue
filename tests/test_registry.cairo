@@ -136,16 +136,16 @@ fn test_fate_compliance_scoring_logic() {
     let auth2: ContractAddress = 0x222.try_into().unwrap();
     dispatcher.add_authority(auth2);
     
-    // Submit many records
+    // Submit records to increase score
     let mut i = 0;
-    while i < 101 {
+    while i < 15 {
         dispatcher.submit_record(i.into(), 'data');
         i += 1;
     };
     stop_cheat_caller_address(dispatcher.contract_address);
 
     let new_score = dispatcher.get_compliance_score();
-    // 50 (base) + 30 (auth count 2-10) + 10 (record count > 100) = 90
+    // 50 (base) + 30 (auth count 2) + 10 (record count > 10) = 90
     assert(new_score == 90_u8, 'Score growth fail');
     assert(dispatcher.get_compliance_label() == 'Excellent', 'Label fail');
 }

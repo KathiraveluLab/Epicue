@@ -19,7 +19,7 @@ function DomainCard({ name, icon, desc, domainKey }: { name: string; icon: strin
   return (
     <div className="rounded-2xl border border-white/5 bg-white/[0.01] p-6 hover:bg-white/[0.03] transition-colors">
       <div className="flex justify-between items-start mb-4">
-        <div className="text-3xl">{icon}</div>
+        <div className="text-sm font-bold text-white/30 tracking-widest uppercase">{domainKey.slice(0, 3)}</div>
         {isLoading ? (
           <div className="h-4 w-8 rounded bg-white/5 animate-pulse" />
         ) : (
@@ -119,19 +119,19 @@ export default function RegistryPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
             <DomainCard 
                 name="Healthcare" 
-                icon="🏥" 
+                icon="[H]" 
                 domainKey="healthcare"
                 desc="Patient efficacy & access reports" 
             />
             <DomainCard 
                 name="Water Quality" 
-                icon="🚰" 
+                icon="[W]" 
                 domainKey="water"
                 desc="Potability & infrastructure feedback" 
             />
             <DomainCard 
                 name="Industry" 
-                icon="🏗️" 
+                icon="[I]" 
                 domainKey="industry"
                 desc="Steel mill audit & carbon traceability" 
             />
