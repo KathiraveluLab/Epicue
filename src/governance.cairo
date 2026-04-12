@@ -1,3 +1,6 @@
+/// The Governor (Accountability)
+/// Manages system-wide compliance and authority delegation as defined in EQUISYS Triad.
+
 use starknet::ContractAddress;
 
 #[derive(Drop, Serde, starknet::Store)]
@@ -13,25 +16,33 @@ pub mod actions {
     pub const REMOVE_AUTHORITY: felt252 = 'REMOVE_AUTH';
 }
 
-/// Accountability: Calculate a FATE compliance score based on governance history.
-/// This increases the Cairo footprint while providing value to the transparency objective.
+/// FATE Compliance Score (Section 2.3)
+/// A STARK-proved metric based on authority density and report volume.
 pub fn calculate_fate_score(record_count: u64, auth_count: u64) -> u8 {
-    let mut score = 50_u8; // Base score
+    let mut score = 40_u8; // Base baseline
     
-    // Fairness: More reports generally indicate better system engagement
-    if record_count > 100 { score += 20; }
+    // Volumetric Performance (Transparency)
+    if record_count > 500 { score += 30; }
+    else if record_count > 100 { score += 20; }
     else if record_count > 10 { score += 10; }
     
-    // Accountability: Balanced number of authorities
-    if auth_count >= 2 && auth_count <= 10 { score += 30; }
-    else if auth_count > 10 { score += 15; } // Too many might dilute accountability
+    // Authority Density (Accountability)
+    // Optimal density: 1 authority per 50 records
+    if auth_count > 0 {
+        let density = record_count / auth_count;
+        if density >= 10 && density <= 100 {
+            score += 30;
+        } else if density > 100 {
+            score += 10; // Under-governed
+        }
+    }
     
     if score > 100 { 100 } else { score }
 }
 
 pub fn get_compliance_label(score: u8) -> felt252 {
-    if score >= 90 { 'Excellent' }
-    else if score >= 70 { 'Good' }
-    else if score >= 50 { 'Average' }
-    else { 'Review Required' }
+    if score >= 90 { 'EQUISYS_EXCELLENT' }
+    else if score >= 70 { 'EQUISYS_GOOD' }
+    else if score >= 50 { 'EQUISYS_AVERAGE' }
+    else { 'EQUISYS_REVIEW_REQUIRED' }
 }

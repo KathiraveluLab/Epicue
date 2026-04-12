@@ -25,6 +25,7 @@ pub mod domains {
     pub const INDUSTRY: felt252 = 'industry';
     pub const EDUCATION: felt252 = 'education';
     pub const GEOSPATIAL: felt252 = 'geospatial';
+    pub const GEOLOGY: felt252 = 'geology';
 }
 
 /// Specialized Natural Science record for Geology.

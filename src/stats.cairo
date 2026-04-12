@@ -1,9 +1,12 @@
+/// Normalization constant for EQUISYS Impact Score
+pub const KAPPA: u64 = 10;
+
 /// Technical metrics to track "Scientific Productivity" on-chain.
+/// Defined in Section 7.1 as: (count * aggregate_severity) / KAPPA
 pub fn calculate_impact_score(count: u64, total_severity: u64) -> u64 {
     if count == 0 { 0 }
     else { 
-        //Impact is count weighted by average severity
-        (count * total_severity) / 10 
+        (count * total_severity) / KAPPA 
     }
 }
 

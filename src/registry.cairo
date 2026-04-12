@@ -476,6 +476,9 @@ mod Registry {
              filter_high_impact_domains(domains_list, impacts, threshold)
         }
 
+        /// Digital Inclusion: Advocate-Proxy Mechanism (Section 6)
+        /// Operationalizes delegated accountability by allowing vetted Advocates
+        /// to assist subjects in submitting commitments with a consent hash.
         fn submit_delegated_record(ref self: ContractState, record: EpicueRecord, subject_consent_hash: felt252) {
             let caller = get_caller_address();
             let mut advocate = self.advocates.read(caller);

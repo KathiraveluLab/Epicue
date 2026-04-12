@@ -2,9 +2,9 @@ pub mod types;
 pub mod access;
 pub mod stats;
 pub mod metadata;
-pub mod validation;
-pub mod governance;
-pub mod auditor;
+pub mod validation; // The Validator: Enforces system integrity & domain constraints
+pub mod governance; // The Governor: Manages accountability & FATE compliance
+pub mod auditor;    // The Auditor: Executes transparency audits & anomaly detection
 pub mod registry;
 pub mod governance_voting;
 pub mod advocate;
