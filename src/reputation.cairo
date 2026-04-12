@@ -14,6 +14,11 @@ pub fn calculate_credit_gain(severity: u8, domain: felt252) -> u64 {
     (severity.into() * 10)
 }
 
+/// Incentivizes "Net Zero" achievements by awarding significant credit gains
+pub fn calculate_sustainability_bonus(green_stature: u64) -> u64 {
+    green_stature / 50
+}
+
 pub mod reputation_tiers {
     pub const BRONZE: u64 = 100;
     pub const SILVER: u64 = 500;

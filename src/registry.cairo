@@ -69,6 +69,8 @@ pub trait IRegistry<TContractState> {
     fn register_methodology(ref self: TContractState, guideline: epicue_core::methodology::MethodologyGuideline);
     fn get_methodology(self: @TContractState, id: u64) -> epicue_core::methodology::MethodologyGuideline;
     fn get_digital_reach(self: @TContractState, domain: felt252) -> u16;
+    fn submit_sustainability_report(ref self: TContractState, report: epicue_core::sustainability::SustainabilityRecord);
+    fn get_sustainability_index(self: @TContractState, institution: ContractAddress) -> u64;
     fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
 }
 
@@ -93,6 +95,7 @@ mod Registry {
     use epicue_core::discovery::{ResearchDiscovery, filter_high_impact_domains};
     use epicue_core::audit_registry::{AuditEvidence, verify_evidence_integrity};
     use epicue_core::methodology::{MethodologyGuideline, calculate_scientific_visibility};
+    use epicue_core::sustainability::{SustainabilityRecord, calculate_green_stature_gain, validate_industry_benchmark};
     use starknet::get_caller_address;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -145,6 +148,10 @@ mod Registry {
         methodology_count: u64,
         // Inclusion Storage
         delegated_domain_counts: Map<felt252, u64>,
+        // Sustainability Storage
+        sustainability_reports: Map<(ContractAddress, u64), SustainabilityRecord>,
+        institution_report_counts: Map<ContractAddress, u64>,
+        institutional_green_stature: Map<ContractAddress, u64>,
     }
 
     // ── Events ─────────────────────────────────
@@ -503,11 +510,40 @@ mod Registry {
         fn get_methodology(self: @ContractState, id: u64) -> MethodologyGuideline {
             self.methodologies.read(id)
         }
-
         fn get_digital_reach(self: @ContractState, domain: felt252) -> u16 {
             let delegated = self.delegated_domain_counts.read(domain);
             let total = self.domain_counts.read(domain);
             calculate_digital_reach_index(delegated, total)
+        }
+
+        fn submit_sustainability_report(ref self: ContractState, mut report: SustainabilityRecord) {
+            let caller = get_caller_address();
+            assert_is_authority(self.authorities.read(caller));
+            
+            // Validate against industry benchmarks
+            assert(validate_industry_benchmark(report.carbon_metric, report.energy_efficiency), 'Failed sustainability benchmark');
+            
+            let count = self.institution_report_counts.read(caller) + 1;
+            report.institution = caller;
+            report.report_index = count;
+            
+            // Update Green Stature
+            let current_stature = self.institutional_green_stature.read(caller);
+            let gain = calculate_green_stature_gain(report.carbon_metric, report.energy_efficiency, report.waste_reduction);
+            let new_stature = current_stature + gain;
+            
+            self.sustainability_reports.write((caller, count), report);
+            self.institution_report_counts.write(caller, count);
+            self.institutional_green_stature.write(caller, new_stature);
+            
+            // Update Reputation
+            let mut rep = self.reputations.read(caller);
+            rep.reputation_credits += (gain / 10); // Reputation weighted by green gain
+            self.reputations.write(caller, rep);
+        }
+
+        fn get_sustainability_index(self: @ContractState, institution: ContractAddress) -> u64 {
+            self.institutional_green_stature.read(institution)
         }
 
         /// Digital Inclusion: Advocate-Proxy Mechanism (Section 6)
