@@ -29,3 +29,9 @@ _paper
 
 # Scarb / Starknet Foundry build artifacts
 .snfoundry_cache
+
+# Metadata exclusion
+Agent.md
+claude.md
+AGENTS.md
+CLAUDE.md
