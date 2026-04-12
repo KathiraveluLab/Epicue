@@ -59,6 +59,23 @@ export const ABI = [
   },
   {
     type: "function",
+    name: "get_domain_metadata",
+    inputs: [{ name: "domain", type: "core::felt252" }],
+    outputs: [
+      { type: "core::felt252" },
+      { type: "core::felt252" },
+    ],
+    state_mutability: "view",
+  },
+  {
+    type: "function",
+    name: "get_pillar_metadata",
+    inputs: [{ name: "pillar", type: "core::felt252" }],
+    outputs: [{ type: "core::felt252" }],
+    state_mutability: "view",
+  },
+  {
+    type: "function",
     name: "submit_record",
     inputs: [
       { name: "user_id", type: "core::felt252" },

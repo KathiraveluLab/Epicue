@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
+import { useAccount, useContract, useSendTransaction, useReadContract } from "@starknet-react/core";
 import { WalletButton } from "@/components/WalletButton";
 import { ABI, CONTRACT_ADDRESS } from "@/lib/contract";
 import { shortString } from "starknet";
@@ -34,6 +34,33 @@ const CATEGORIES_BY_DOMAIN: Record<string, { value: string; label: string }[]> =
   ],
 };
 
+function DomainOption({ value, label, icon, selected, onSelect }: { value: string; label: string; icon: string; selected: boolean; onSelect: (v: string) => void }) {
+  const { data: meta } = useReadContract({
+    abi: ABI,
+    address: CONTRACT_ADDRESS,
+    functionName: "get_domain_metadata",
+    args: [shortString.encodeShortString(value)],
+  });
+
+  // meta returns [name, description]
+  const onChainName = meta ? shortString.decodeShortString((meta as any)[0]) : label;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+        selected
+          ? "border-violet-500 bg-violet-500/10 text-white"
+          : "border-white/5 bg-white/[0.02] text-white/40 hover:border-white/10"
+      }`}
+    >
+      <span className="text-xl mb-1">{icon}</span>
+      <span className="text-[10px] font-medium uppercase tracking-wider">{onChainName.split(' ')[0]}</span>
+    </button>
+  );
+}
+
 export default function SubmitPage() {
   const { isConnected } = useAccount();
   const [domain, setDomain] = useState("healthcare");
@@ -44,6 +71,15 @@ export default function SubmitPage() {
 
   const { contract } = useContract({ abi: ABI, address: CONTRACT_ADDRESS });
   const { sendAsync } = useSendTransaction({});
+
+  const { data: domainMeta } = useReadContract({
+    abi: ABI,
+    address: CONTRACT_ADDRESS,
+    functionName: "get_domain_metadata",
+    args: [shortString.encodeShortString(domain)],
+  });
+
+  const domainDesc = domainMeta ? shortString.decodeShortString((domainMeta as any)[1]) : "EQUISYS Multi-domain Architecture";
 
   const handleDomainChange = (newDomain: string) => {
     setDomain(newDomain);
@@ -99,7 +135,8 @@ export default function SubmitPage() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Submit Public Service Report</h1>
             <p className="text-white/40 text-sm leading-relaxed">
-              Generalizing for EQUISYS Broad Use Cases.
+              {domainDesc}
+              <br />
               Your submission is anonymous using client-side blinded commitments —
               no PII is stored on-chain.
             </p>
@@ -138,19 +175,14 @@ export default function SubmitPage() {
                 </label>
                 <div className="grid grid-cols-3 gap-3">
                   {DOMAINS.map((d) => (
-                    <button
+                    <DomainOption
                       key={d.value}
-                      type="button"
-                      onClick={() => handleDomainChange(d.value)}
-                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
-                        domain === d.value
-                          ? "border-violet-500 bg-violet-500/10 text-white"
-                          : "border-white/5 bg-white/[0.02] text-white/40 hover:border-white/10"
-                      }`}
-                    >
-                      <span className="text-xl mb-1">{d.icon}</span>
-                      <span className="text-[10px] font-medium uppercase tracking-wider">{d.label.split(' ')[0]}</span>
-                    </button>
+                      value={d.value}
+                      label={d.label}
+                      icon={d.icon}
+                      selected={domain === d.value}
+                      onSelect={(v) => handleDomainChange(v)}
+                    />
                   ))}
                 </div>
               </div>

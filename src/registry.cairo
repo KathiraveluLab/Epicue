@@ -1,8 +1,6 @@
-// Epicue: Equity, Privacy, and Integrity with Cairo in Untrusted Environments
-// EQUISYS Verifiable Public Service Data Registry
-// FATE-compliant: Fairness, Accountability, Transparency, Ethics
-
 use epicue_core::types::{EpicueRecord, HealthRecord, domains};
+use epicue_core::metadata;
+use epicue_core::validation;
 use starknet::ContractAddress;
 
 // ──────────────────────────────────────────────
@@ -23,9 +21,15 @@ pub trait IRegistry<TContractState> {
     fn submit_epicue_record(ref self: TContractState, record: EpicueRecord);
     fn get_epicue_record(self: @TContractState, subject_id: felt252) -> EpicueRecord;
     
-    // Accountability & Transparency
+    // Accountability & Transparency views (Phase-4 On-chain Metadata)
     fn get_record_count(self: @TContractState) -> u64;
     fn get_domain_count(self: @TContractState, domain: felt252) -> u64;
+    fn get_domain_metadata(self: @TContractState, domain: felt252) -> (felt252, felt252); // (name, description)
+    fn get_pillar_metadata(self: @TContractState, pillar: felt252) -> felt252; // (description)
+    fn get_compliance_score(self: @TContractState) -> u8;
+    fn get_compliance_label(self: @TContractState) -> felt252;
+
+    // Authority management
     fn add_authority(ref self: TContractState, new_authority: ContractAddress);
     fn is_authority(self: @TContractState, address: ContractAddress) -> bool;
 }
@@ -38,6 +42,8 @@ pub trait IRegistry<TContractState> {
 mod Registry {
     use super::{EpicueRecord, HealthRecord, domains};
     use epicue_core::access::assert_is_authority;
+    use epicue_core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
+    use epicue_core::validation::check_domain_constraints;
     use starknet::get_caller_address;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -54,6 +60,7 @@ mod Registry {
         epicue_records: Map<felt252, EpicueRecord>,
         // Authority registry
         authorities: Map<ContractAddress, bool>,
+        authority_count: u64,
         // Transparency counters
         record_count: u64,
         // On-chain aggregations for EQUISYS domains
@@ -103,6 +110,7 @@ mod Registry {
     #[constructor]
     fn constructor(ref self: ContractState, initial_authority: ContractAddress) {
         self.authorities.write(initial_authority, true);
+        self.authority_count.write(1);
         self.record_count.write(0);
     }
 
@@ -127,7 +135,9 @@ mod Registry {
         fn submit_health_record(ref self: ContractState, record: HealthRecord) {
             assert_is_authority(self.authorities.read(get_caller_address()));
             assert(record.patient_id != 0, 'Invalid patient commitment');
-            assert(record.severity >= 1_u8 && record.severity <= 5_u8, 'Severity out of range');
+            
+            // Verifiable Policy: Move validation on-chain
+            check_domain_constraints(domains::HEALTHCARE, record.service_category, record.severity);
 
             let patient_id = record.patient_id;
             self.health_records.write(patient_id, record);
@@ -153,7 +163,9 @@ mod Registry {
         fn submit_epicue_record(ref self: ContractState, record: EpicueRecord) {
             assert_is_authority(self.authorities.read(get_caller_address()));
             assert(record.subject_id != 0, 'Invalid subject commitment');
-            assert(record.severity >= 1_u8 && record.severity <= 5_u8, 'Severity out of range');
+            
+            // Phase-4: Use modular validation to increase Cairo complexity
+            check_domain_constraints(record.domain, record.category, record.severity);
 
             let subject_id = record.subject_id;
             let domain = record.domain;
@@ -187,9 +199,28 @@ mod Registry {
             self.domain_counts.read(domain)
         }
 
+        fn get_domain_metadata(self: @ContractState, domain: felt252) -> (felt252, felt252) {
+            (get_default_domain_name(domain), get_default_domain_desc(domain))
+        }
+
+        fn get_pillar_metadata(self: @ContractState, pillar: felt252) -> felt252 {
+            get_fate_pillar_desc(pillar)
+        }
+
+        fn get_compliance_score(self: @ContractState) -> u8 {
+            epicue_core::governance::calculate_fate_score(self.record_count.read(), self.authority_count.read())
+        }
+
+        fn get_compliance_label(self: @ContractState) -> felt252 {
+            epicue_core::governance::get_compliance_label(self.get_compliance_score())
+        }
+
         fn add_authority(ref self: ContractState, new_authority: ContractAddress) {
             assert_is_authority(self.authorities.read(get_caller_address()));
-            self.authorities.write(new_authority, true);
+            if !self.authorities.read(new_authority) {
+                self.authorities.write(new_authority, true);
+                self.authority_count.write(self.authority_count.read() + 1);
+            }
         }
 
         fn is_authority(self: @ContractState, address: ContractAddress) -> bool {

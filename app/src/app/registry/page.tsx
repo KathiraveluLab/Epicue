@@ -34,6 +34,29 @@ function DomainCard({ name, icon, desc, domainKey }: { name: string; icon: strin
   );
 }
 
+function FatePillar({ name }: { name: string }) {
+  const { data: desc, isLoading } = useReadContract({
+    abi: ABI,
+    address: CONTRACT_ADDRESS,
+    functionName: "get_pillar_metadata",
+    args: [shortString.encodeShortString(name)],
+  });
+
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 text-sm text-emerald-400">✓</span>
+      <div>
+        <span className="text-sm font-medium text-white">{name}</span>
+        {isLoading ? (
+          <span className="h-3 w-24 inline-block ml-2 rounded bg-white/5 animate-pulse" />
+        ) : (
+          <span className="text-sm text-white/40 ml-2">— {desc ? shortString.decodeShortString(desc as string) : "Verified"}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function RegistryPage() {
   const { data: count, isLoading, isError, refetch } = useReadContract({
     abi: ABI,
@@ -120,21 +143,8 @@ export default function RegistryPage() {
             <span className="text-violet-400">●</span> FATE Governance Backend
           </h2>
           <div className="space-y-3">
-            {[
-              { label: "Fairness", value: "Starknet L2 — equitable access through low interaction costs", ok: true },
-              { label: "Accountability", value: "Every record entry proven mathematically via Cairo", ok: true },
-              { label: "Transparency", value: "Open-source contract logic & public state verification", ok: true },
-              { label: "Ethics", value: "Zero PII on-chain — subject commitments only", ok: true },
-            ].map(({ label, value, ok }) => (
-              <div key={label} className="flex items-start gap-3">
-                <span className={`mt-0.5 text-sm ${ok ? "text-emerald-400" : "text-red-400"}`}>
-                  {ok ? "✓" : "✗"}
-                </span>
-                <div>
-                  <span className="text-sm font-medium text-white">{label}</span>
-                  <span className="text-sm text-white/40 ml-2">— {value}</span>
-                </div>
-              </div>
+            {["Fairness", "Accountability", "Transparency", "Ethics"].map((name) => (
+              <FatePillar key={name} name={name} />
             ))}
           </div>
         </div>

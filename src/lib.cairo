@@ -1,4 +1,8 @@
 pub mod types;
 pub mod access;
 pub mod stats;
+pub mod metadata;
+pub mod validation;
+pub mod governance;
+pub mod auditor;
 pub mod registry;
