@@ -66,6 +66,8 @@ pub trait IRegistry<TContractState> {
     // Advanced Phase-4 Primitives
     fn archive_audit_evidence(ref self: TContractState, evidence: epicue_core::audit_registry::AuditEvidence);
     fn register_discovery_record(ref self: TContractState, record: epicue_core::discovery::ResearchDiscovery);
+    fn register_methodology(ref self: TContractState, guideline: epicue_core::methodology::MethodologyGuideline);
+    fn get_methodology(self: @TContractState, id: u64) -> epicue_core::methodology::MethodologyGuideline;
     fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
 }
 
@@ -89,6 +91,7 @@ mod Registry {
     use epicue_core::schema::{DataSchema, validate_record_against_schema};
     use epicue_core::discovery::{ResearchDiscovery, filter_high_impact_domains};
     use epicue_core::audit_registry::{AuditEvidence, verify_evidence_integrity};
+    use epicue_core::methodology::{MethodologyGuideline, calculate_scientific_visibility};
     use starknet::get_caller_address;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -136,6 +139,9 @@ mod Registry {
         // Historical Audit Evidence
         audit_archives: Map<u64, AuditEvidence>,
         archive_count: u64,
+        // Methodology Registry Storage
+        methodologies: Map<u64, MethodologyGuideline>,
+        methodology_count: u64,
     }
 
     // ── Events ─────────────────────────────────
@@ -474,6 +480,26 @@ mod Registry {
                  self.get_domain_impact(domains::GEOSPATIAL)
              ];
              filter_high_impact_domains(domains_list, impacts, threshold)
+        }
+
+        fn register_methodology(ref self: ContractState, mut guideline: MethodologyGuideline) {
+            let caller = get_caller_address();
+            assert_is_authority(self.authorities.read(caller));
+            
+            let id = self.methodology_count.read() + 1;
+            guideline.id = id;
+            guideline.author = caller;
+            
+            // Calculate visibility based on domain metrics
+            let domain_impact = self.get_domain_impact(guideline.domain);
+            guideline.impact_metric = calculate_scientific_visibility(domain_impact);
+            
+            self.methodologies.write(id, guideline);
+            self.methodology_count.write(id);
+        }
+
+        fn get_methodology(self: @ContractState, id: u64) -> MethodologyGuideline {
+            self.methodologies.read(id)
         }
 
         /// Digital Inclusion: Advocate-Proxy Mechanism (Section 6)

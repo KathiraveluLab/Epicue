@@ -16,3 +16,4 @@ pub mod discovery;
 pub mod audit_registry;
 pub mod institutional;
 pub mod research_incentives;
+pub mod methodology;
