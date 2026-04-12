@@ -1,32 +1,9 @@
 // Epicue: Equity, Privacy, and Integrity with Cairo in Untrusted Environments
-// Healthcare Case Study — Verifiable Public Service Data Registry
+// EQUISYS Verifiable Public Service Data Registry
 // FATE-compliant: Fairness, Accountability, Transparency, Ethics
 
-// ──────────────────────────────────────────────
-// Data Types
-// ──────────────────────────────────────────────
-
-/// Generalized record submitted for EQUISYS use cases (Healthcare, Water, Industry, etc.).
-/// The `subject_id` is a blinded commitment to the entity being reported.
-#[derive(Drop, Serde, starknet::Store)]
-pub struct EpicueRecord {
-    pub subject_id: felt252,      // blinded subject commitment
-    pub domain: felt252,          // e.g. 'healthcare', 'water', 'industry'
-    pub category: felt252,        // e.g. 'emergency', 'quality_report', 'batch_audit'
-    pub severity: u8,             // 1 (low) – 5 (critical)
-    pub timestamp: u64,           // Unix epoch
-    pub data_hash: felt252,       // Pedersen hash of off-chain payload
-}
-
-/// Kept for backwards compatibility with Phase-2 healthcare logic.
-#[derive(Drop, Serde, starknet::Store)]
-pub struct HealthRecord {
-    pub patient_id: felt252,
-    pub service_category: felt252,
-    pub severity: u8,
-    pub timestamp: u64,
-    pub data_hash: felt252,
-}
+use epicue_core::types::{EpicueRecord, HealthRecord, domains};
+use starknet::ContractAddress;
 
 // ──────────────────────────────────────────────
 // Interface
@@ -45,11 +22,12 @@ pub trait IRegistry<TContractState> {
     // Phase-3 EQUISYS generalized entry points
     fn submit_epicue_record(ref self: TContractState, record: EpicueRecord);
     fn get_epicue_record(self: @TContractState, subject_id: felt252) -> EpicueRecord;
+    
+    // Accountability & Transparency
     fn get_record_count(self: @TContractState) -> u64;
-
-    // Authority management
-    fn add_authority(ref self: TContractState, new_authority: starknet::ContractAddress);
-    fn is_authority(self: @TContractState, address: starknet::ContractAddress) -> bool;
+    fn get_domain_count(self: @TContractState, domain: felt252) -> u64;
+    fn add_authority(ref self: TContractState, new_authority: ContractAddress);
+    fn is_authority(self: @TContractState, address: ContractAddress) -> bool;
 }
 
 // ──────────────────────────────────────────────
@@ -58,9 +36,9 @@ pub trait IRegistry<TContractState> {
 
 #[starknet::contract]
 mod Registry {
-    use super::HealthRecord;
+    use super::{EpicueRecord, HealthRecord, domains};
+    use epicue_core::access::assert_is_authority;
     use starknet::get_caller_address;
-    use starknet::get_block_timestamp;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
 
@@ -70,14 +48,16 @@ mod Registry {
     struct Storage {
         // Phase-1: generic records (user_id → data_hash)
         records: Map<felt252, felt252>,
-        // Phase-2: typed healthcare records (kept for legacy support)
+        // Phase-2: typed healthcare records (legacy)
         health_records: Map<felt252, HealthRecord>,
         // Phase-3: generalized EQUISYS records
         epicue_records: Map<felt252, EpicueRecord>,
-        // Authority registry (AccountAddress → can_submit)
+        // Authority registry
         authorities: Map<ContractAddress, bool>,
-        // Transparency counter
+        // Transparency counters
         record_count: u64,
+        // On-chain aggregations for EQUISYS domains
+        domain_counts: Map<felt252, u64>,
     }
 
     // ── Events ─────────────────────────────────
@@ -90,7 +70,6 @@ mod Registry {
         EpicueRecordSubmitted: EpicueRecordSubmitted,
     }
 
-    /// Emitted on every generic record submission.
     #[derive(Drop, starknet::Event)]
     struct RecordSubmitted {
         #[key]
@@ -98,7 +77,6 @@ mod Registry {
         data_hash: felt252,
     }
 
-    /// Emitted on every healthcare record submission.
     #[derive(Drop, starknet::Event)]
     struct HealthRecordSubmitted {
         #[key]
@@ -109,7 +87,6 @@ mod Registry {
         data_hash: felt252,
     }
 
-    /// Emitted on every generalized EQUISYS record submission.
     #[derive(Drop, starknet::Event)]
     struct EpicueRecordSubmitted {
         #[key]
@@ -129,19 +106,17 @@ mod Registry {
         self.record_count.write(0);
     }
 
-    // ── Interface Implementation ───────────────
+    // ── Implementation ──────────────────────────
 
     #[abi(embed_v0)]
     impl RegistryImpl of super::IRegistry<ContractState> {
 
-        // ── Phase-1 generic record ──────────────
-
         fn submit_record(ref self: ContractState, user_id: felt252, data_hash: felt252) {
-            let caller = get_caller_address();
-            assert(self.authorities.read(caller), 'Unauthorized submission');
+            assert_is_authority(self.authorities.read(get_caller_address()));
+            
             self.records.write(user_id, data_hash);
-            let count = self.record_count.read();
-            self.record_count.write(count + 1);
+            self.record_count.write(self.record_count.read() + 1);
+            
             self.emit(Event::RecordSubmitted(RecordSubmitted { user_id, data_hash }));
         }
 
@@ -149,37 +124,25 @@ mod Registry {
             self.records.read(user_id)
         }
 
-        // ── Phase-2 healthcare record ───────────
-
         fn submit_health_record(ref self: ContractState, record: HealthRecord) {
-            // Accountability: only authorized human-in-the-loop entities may submit
-            let caller = get_caller_address();
-            assert(self.authorities.read(caller), 'Unauthorized submission');
-
-            // Integrity: reject zero patient_id (must be a real blinded commitment)
+            assert_is_authority(self.authorities.read(get_caller_address()));
             assert(record.patient_id != 0, 'Invalid patient commitment');
-
-            // Reasonableness: severity must be 1..5
             assert(record.severity >= 1_u8 && record.severity <= 5_u8, 'Severity out of range');
 
             let patient_id = record.patient_id;
-            let service_category = record.service_category;
-            let severity = record.severity;
-            let timestamp = record.timestamp;
-            let data_hash = record.data_hash;
-
             self.health_records.write(patient_id, record);
+            
+            // Increment global and domain count
+            self.record_count.write(self.record_count.read() + 1);
+            let d_count = self.domain_counts.read(domains::HEALTHCARE);
+            self.domain_counts.write(domains::HEALTHCARE, d_count + 1);
 
-            let count = self.record_count.read();
-            self.record_count.write(count + 1);
-
-            // Transparency: emit event so any observer can track submissions
             self.emit(Event::HealthRecordSubmitted(HealthRecordSubmitted {
-                patient_id,
-                service_category,
-                severity,
-                timestamp,
-                data_hash,
+                patient_id: record.patient_id,
+                service_category: record.service_category,
+                severity: record.severity,
+                timestamp: record.timestamp,
+                data_hash: record.data_hash,
             }));
         }
 
@@ -187,34 +150,28 @@ mod Registry {
             self.health_records.read(patient_id)
         }
 
-        // ── Phase-3 generalized record ──────────
-
         fn submit_epicue_record(ref self: ContractState, record: EpicueRecord) {
-            let caller = get_caller_address();
-            assert(self.authorities.read(caller), 'Unauthorized submission');
-
+            assert_is_authority(self.authorities.read(get_caller_address()));
             assert(record.subject_id != 0, 'Invalid subject commitment');
             assert(record.severity >= 1_u8 && record.severity <= 5_u8, 'Severity out of range');
 
             let subject_id = record.subject_id;
             let domain = record.domain;
-            let category = record.category;
-            let severity = record.severity;
-            let timestamp = record.timestamp;
-            let data_hash = record.data_hash;
-
+            
             self.epicue_records.write(subject_id, record);
-
-            let count = self.record_count.read();
-            self.record_count.write(count + 1);
+            
+            // Increment global and domain count
+            self.record_count.write(self.record_count.read() + 1);
+            let d_count = self.domain_counts.read(domain);
+            self.domain_counts.write(domain, d_count + 1);
 
             self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
                 subject_id,
                 domain,
-                category,
-                severity,
-                timestamp,
-                data_hash,
+                category: record.category,
+                severity: record.severity,
+                timestamp: record.timestamp,
+                data_hash: record.data_hash,
             }));
         }
 
@@ -226,11 +183,12 @@ mod Registry {
             self.record_count.read()
         }
 
-        // ── Authority management ────────────────
+        fn get_domain_count(self: @ContractState, domain: felt252) -> u64 {
+            self.domain_counts.read(domain)
+        }
 
         fn add_authority(ref self: ContractState, new_authority: ContractAddress) {
-            let caller = get_caller_address();
-            assert(self.authorities.read(caller), 'Caller not authority');
+            assert_is_authority(self.authorities.read(get_caller_address()));
             self.authorities.write(new_authority, true);
         }
 

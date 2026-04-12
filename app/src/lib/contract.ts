@@ -52,6 +52,13 @@ export const ABI = [
   },
   {
     type: "function",
+    name: "get_domain_count",
+    inputs: [{ name: "domain", type: "core::felt252" }],
+    outputs: [{ type: "core::integer::u64" }],
+    state_mutability: "view",
+  },
+  {
+    type: "function",
     name: "submit_record",
     inputs: [
       { name: "user_id", type: "core::felt252" },

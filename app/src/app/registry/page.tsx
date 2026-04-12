@@ -4,6 +4,35 @@ import { useReadContract } from "@starknet-react/core";
 import Link from "next/link";
 import { WalletButton } from "@/components/WalletButton";
 import { ABI, CONTRACT_ADDRESS } from "@/lib/contract";
+import { shortString } from "starknet";
+
+function DomainCard({ name, icon, desc, domainKey }: { name: string; icon: string; desc: string; domainKey: string }) {
+  const { data: count, isLoading } = useReadContract({
+    abi: ABI,
+    address: CONTRACT_ADDRESS,
+    functionName: "get_domain_count",
+    args: [shortString.encodeShortString(domainKey)],
+  });
+
+  const displayCount = count ? Number(count) : 0;
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.01] p-6 hover:bg-white/[0.03] transition-colors">
+      <div className="flex justify-between items-start mb-4">
+        <div className="text-3xl">{icon}</div>
+        {isLoading ? (
+          <div className="h-4 w-8 rounded bg-white/5 animate-pulse" />
+        ) : (
+          <span className="text-xs font-bold text-violet-400 bg-violet-400/10 px-2 py-0.5 rounded-full">
+            {displayCount} reports
+          </span>
+        )}
+      </div>
+      <p className="text-white font-semibold text-sm mb-1">{name}</p>
+      <p className="text-white/30 text-[11px] leading-tight">{desc}</p>
+    </div>
+  );
+}
 
 export default function RegistryPage() {
   const { data: count, isLoading, isError, refetch } = useReadContract({
@@ -40,7 +69,7 @@ export default function RegistryPage() {
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
           <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
-            <p className="text-xs text-white/30 uppercase tracking-wider mb-2">Total Reports</p>
+            <p className="text-xs text-white/30 uppercase tracking-wider mb-2">Global Reports</p>
             {isLoading ? (
               <div className="h-10 w-20 rounded-lg bg-white/5 animate-pulse" />
             ) : isError ? (
@@ -51,9 +80,9 @@ export default function RegistryPage() {
           </div>
 
           <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
-            <p className="text-xs text-white/30 uppercase tracking-wider mb-2">Domains Supported</p>
-            <p className="text-2xl font-bold text-violet-300">Healthcare, Water, Industry</p>
-            <p className="text-xs text-white/30 mt-1">Generalized EQUISYS Architecture</p>
+            <p className="text-xs text-white/30 uppercase tracking-wider mb-2">FATE Compliance</p>
+            <p className="text-2xl font-bold text-violet-300">Verified</p>
+            <p className="text-xs text-white/30 mt-1">On-chain Statistics</p>
           </div>
 
           <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
@@ -64,18 +93,25 @@ export default function RegistryPage() {
         </div>
 
         {/* Domain grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-center">
-            {[
-                { name: "Healthcare", icon: "🏥", desc: "Patient efficacy & access reports" },
-                { name: "Water Quality", icon: "🚰", desc: "Potability & infrastructure feedback" },
-                { name: "Industry", icon: "🏗️", desc: "Steel mill audit & carbon traceability" }
-            ].map(d => (
-                <div key={d.name} className="rounded-2xl border border-white/5 bg-white/[0.01] p-6">
-                    <div className="text-3xl mb-3">{d.icon}</div>
-                    <p className="text-white font-semibold text-sm mb-1">{d.name}</p>
-                    <p className="text-white/30 text-[11px] leading-tight">{d.desc}</p>
-                </div>
-            ))}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            <DomainCard 
+                name="Healthcare" 
+                icon="🏥" 
+                domainKey="healthcare"
+                desc="Patient efficacy & access reports" 
+            />
+            <DomainCard 
+                name="Water Quality" 
+                icon="🚰" 
+                domainKey="water"
+                desc="Potability & infrastructure feedback" 
+            />
+            <DomainCard 
+                name="Industry" 
+                icon="🏗️" 
+                domainKey="industry"
+                desc="Steel mill audit & carbon traceability" 
+            />
         </div>
 
         {/* Transparency info */}
