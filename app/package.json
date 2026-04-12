@@ -1,0 +1,32 @@
+{
+  "name": "app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@starknet-react/chains": "^5.0.3",
+    "@starknet-react/core": "^3.7.4",
+    "autoprefixer": "^10.4.27",
+    "get-starknet-core": "^3.3.5",
+    "next": "^14.2.35",
+    "postcss": "^8.5.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "starknet": "^6.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5"
+  }
+}
