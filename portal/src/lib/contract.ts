@@ -197,4 +197,39 @@ export const CONTRACT_ABI = [
     ],
     "state_mutability": "view"
   },
+  {
+    "type": "function",
+    "name": "get_system_sustainability_score",
+    "inputs": [],
+    "outputs": [{ "type": "core::integer::u64" }],
+    "state_mutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "challenge_record",
+    "inputs": [
+      {
+        "name": "subject_id",
+        "type": "core::felt252"
+      },
+      {
+        "name": "scientific_consensus",
+        "type": "core::integer::u8"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
+    "type": "function",
+    "name": "get_review_consensus",
+    "inputs": [
+      {
+        "name": "subject_id",
+        "type": "core::felt252"
+      }
+    ],
+    "outputs": [{ "type": "core::integer::u8" }],
+    "state_mutability": "view"
+  },
 ] as const;

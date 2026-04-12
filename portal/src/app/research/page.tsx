@@ -26,6 +26,14 @@ export default function ResearchPage() {
     watch: true,
   });
 
+  const { data: sustScore } = useReadContract({
+    abi: CONTRACT_ABI,
+    address: CONTRACT_ADDRESS,
+    functionName: "get_system_sustainability_score",
+    args: [],
+    watch: true,
+  });
+
   const { data: userRep } = useReadContract({
     abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS,
@@ -96,9 +104,11 @@ export default function ResearchPage() {
             <p className="mt-4 text-white/30 text-sm font-medium">Unique institutions per data commitment (SDG 17)</p>
           </div>
           <div className="p-10 rounded-[40px] bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors shadow-inner">
-            <h3 className="text-white/40 uppercase tracking-[0.2em] font-bold text-sm mb-4">Verified Proofs</h3>
-            <div className="text-7xl font-black">{totalRecords?.toString() || "0"}</div>
-            <p className="mt-4 text-white/30 text-sm font-medium">Total STARK-verified records across all domains</p>
+            <h3 className="text-white/40 uppercase tracking-[0.2em] font-bold text-sm mb-4">Sustainability Score</h3>
+            <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-emerald-400 to-cyan-400">
+                {sustScore?.toString() || "0"}
+            </div>
+            <p className="mt-4 text-white/30 text-sm font-medium">STARK-aggregated system utility and resource efficiency</p>
           </div>
           <div className="p-10 rounded-[40px] bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors shadow-inner">
             <h3 className="text-white/40 uppercase tracking-[0.2em] font-bold text-sm mb-4">Reputation Credits</h3>

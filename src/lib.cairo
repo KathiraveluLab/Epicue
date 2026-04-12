@@ -9,3 +9,8 @@ pub mod registry;
 pub mod governance_voting;
 pub mod advocate;
 pub mod reputation;
+pub mod analytics;
+pub mod peer_review;
+pub mod schema;
+pub mod discovery;
+pub mod audit_registry;

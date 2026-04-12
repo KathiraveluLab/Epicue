@@ -37,3 +37,11 @@ pub fn check_geospatial_bounds(lat: i32, lon: i32) {
     assert(lat >= 4000 && lat <= 4200, 'Outside research boundary');
     assert(lon >= -7500 && lon <= -7300, 'Outside research boundary');
 }
+
+/// Advanced geological integrity check: checks ratios of mineral density to depth.
+/// This prevents unrealistic data submission in the Natural Sciences case study.
+pub fn validate_geological_integrity(depth: u32, density: u16) {
+    if depth > 1000 {
+        assert(density > 200, 'Density too low for depth');
+    }
+}

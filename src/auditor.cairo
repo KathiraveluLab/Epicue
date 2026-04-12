@@ -27,8 +27,39 @@ pub fn get_audit_summary(processed: u64, anomalies: u64) -> felt252 {
     else { 'CRITICAL: Data Integrity Alert' }
 }
 
-/// Calculate the average severity of a set of records (logic only)
-pub fn calculate_weighted_severity(count: u64, total_severity: u64) -> u8 {
-    if count == 0 { 0_u8 }
-    else { (total_severity / count).try_into().unwrap() }
+/// Advanced Differential Audit Logic
+/// This compares a new record against historical domain averages on-chain.
+pub fn perform_differential_audit(
+    new_severity: u8, 
+    domain_avg_severity: u64,
+) -> bool {
+    let avg = domain_avg_severity;
+    let sev = new_severity.into();
+    
+    // Anomaly detection: If severity is 3x the average, trigger a warning
+    if sev > (avg * 3) {
+        return false;
+    }
+    true
+}
+
+pub fn generate_risk_score(severity: u8, reputation: u64) -> u8 {
+    if reputation > 1000 {
+        return severity / 2; // Verified institutions have lower inherent risk
+    }
+    severity
+}
+
+pub fn calculate_weighted_audit(count: u64, disputes: u64) -> u16 {
+    if count == 0 { return 0; }
+    let ratio = (disputes * 100) / count;
+    ratio.try_into().unwrap_or(100)
+}
+
+/// Verifies if a domain is trending toward instability
+pub fn check_domain_instability(current_impact: u64, prev_impact: u64, threshold: u64) -> bool {
+    if current_impact > (prev_impact + threshold) {
+        return true;
+    }
+    false
 }

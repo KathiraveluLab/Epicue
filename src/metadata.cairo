@@ -31,9 +31,36 @@ pub fn get_default_domain_desc(domain: felt252) -> felt252 {
 }
 
 pub fn get_fate_pillar_desc(pillar: felt252) -> felt252 {
-    if pillar == 'Fairness' { 'Equitable L2 access costs' }
-    else if pillar == 'Accountability' { 'STARK-proved state changes' }
-    else if pillar == 'Transparency' { 'Publicly auditable Cairo logic' }
-    else if pillar == 'Ethics' { 'No PII stored on-chain' }
-    else { 'FATE compliance verified' }
+    if pillar == 'Fairness' { 
+        'Equitable L2 access for all societal strata.' 
+    } else if pillar == 'Accountability' { 
+        'STARK-proven institutional data accountability.' 
+    } else if pillar == 'Transparency' { 
+        'Verifiable Cairo logic and open public service registries.' 
+    } else if pillar == 'Ethics' { 
+        'Privacy-preserving blinded identifiers with subject consent.' 
+    } else { 
+        'FATE compliance verified across all domains.' 
+    }
+}
+
+pub fn get_long_domain_desc(domain: felt252) -> felt252 {
+    if domain == domains::HEALTHCARE {
+        'Verifiable healthcare reporting for equity in fetal health monitoring.'
+    } else if domain == domains::WATER {
+        'On-chain water quality monitoring for sustainable sanitation audits.'
+    } else if domain == domains::GEOSPATIAL {
+        'Integrating natural science data models with STARK-based spatial proofs.'
+    } else {
+        'Interdisciplinary research study within the EQUISYS framework.'
+    }
+}
+
+/// Verification context for inter-institutional collaboration
+pub fn get_collaboration_justification(auth_count: u64) -> felt252 {
+    if auth_count > 5 {
+        'Broad inter-institutional scientific consensus established.'
+    } else {
+        'Initial multi-authority collaborative audit phase.'
+    }
 }
