@@ -49,5 +49,24 @@ Run the resilience suite:
 snforge test
 ```
 
+### Deployment
+
+Epicue uses `starkli` for professional deployment on the Starknet Sepolia testnet.
+
+1. **Configure Environment**: Copy the template and populate it with your RPC URL and account details.
+   ```bash
+   cp deployment/sepolia.env.template deployment/.env
+   # Edit deployment/.env with your secrets
+   ```
+
+2. **Run Deployment Script**: Ensure your account is funded and your keystore is accessible.
+   ```bash
+   chmod +x deployment/deploy_sepolia.sh
+   ./deployment/deploy_sepolia.sh
+   ```
+
+## Security & Byzantine Resilience
+The framework enforces a rigorous $n=3f+1$ Byzantine Fault Tolerance model. Security audits are performed on-chain by the EQUISYS Triad, and proven malicious behavior results in institutional slashing.
+
 ---
 *Strengthening citizens' trust through objective cryptographic guarantees.*
