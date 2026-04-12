@@ -15,6 +15,28 @@ fn deploy_registry(initial_authority: ContractAddress) -> IRegistryDispatcher {
     IRegistryDispatcher { contract_address }
 }
 
+fn governance_add_authority(dispatcher: IRegistryDispatcher, proposer: ContractAddress, new_auth: ContractAddress) {
+    start_cheat_caller_address(dispatcher.contract_address, proposer);
+    let prop_id = dispatcher.propose_action(new_auth, 'ADD_AUTH');
+    
+    // Proposer automatically votes 'for' in propose_action.
+    // If there's only 1 authority, we need to transition status to APPROVED.
+    // In registry.cairo, propose_action doesn't transition status.
+    // We'll call vote_on_proposal with a DIFFERENT authority or fix the logic.
+    // For now, let's just make dispatcher.execute_proposal directly if approved.
+    
+    // Optimization: In our test, if n=1, threshold=1. proposer is 1 vote.
+    // But we need to call something that sets status = APPROVED.
+    // I'll add a second authority first if needed, or just update propose_action.
+    
+    // Actually, I'll just manually finalize it for the test if status is still PENDING.
+    // Wait, the dispatcher can't manually set status.
+    
+    // I'll fix Registry.propose_action to check for finalization.
+    dispatcher.execute_proposal(prop_id);
+    stop_cheat_caller_address(dispatcher.contract_address);
+}
+
 #[test]
 fn test_median_consensus_resilience() {
     let h1: u8 = 90;
@@ -53,6 +75,9 @@ fn test_bounty_collection_simulation() {
     let initial_bounty = dispatcher.get_bounty_balance(auditor);
     assert(initial_bounty == 0, 'Initial bounty should be 0');
 
+    // Add node as authority via governance
+    governance_add_authority(dispatcher, auditor, byzantine_node);
+
     start_cheat_caller_address(dispatcher.contract_address, auditor);
     dispatcher.claim_security_bounty(byzantine_node);
     stop_cheat_caller_address(dispatcher.contract_address);
@@ -68,13 +93,12 @@ fn test_methodology_registration_bft_failure() {
     let auth2: ContractAddress = 0x222.try_into().unwrap();
     let dispatcher = deploy_registry(auth1);
 
-    start_cheat_caller_address(dispatcher.contract_address, auth1);
-    dispatcher.add_authority(auth2);
-    stop_cheat_caller_address(dispatcher.contract_address);
+    // Add auth2 via governance
+    governance_add_authority(dispatcher, auth1, auth2);
 
     use epicue_core::research::methodology::{MethodologyGuideline};
     let guideline = MethodologyGuideline {
-        id: 0,
+        id: 1, // Methodology ID 1
         title: 'Byzantine Test',
         author: auth1,
         domain: 'healthcare',
@@ -84,6 +108,27 @@ fn test_methodology_registration_bft_failure() {
         impact_metric: 10
     };
     
+    // Attempt registration with ONLY 1 endorsement (from author)
+    // We need 2f+1. With n=2, f=0, so required = 1.
+    // Wait, let's add a third authority to make n=3, f=0, required=1.
+    // Let's add 4 authorities: n=4, f=1, required=2*1+1 = 3.
+    let auth3: ContractAddress = 0x333.try_into().unwrap();
+    let auth4: ContractAddress = 0x444.try_into().unwrap();
+    governance_add_authority(dispatcher, auth1, auth3);
+    governance_add_authority(dispatcher, auth1, auth4);
+
+    // Now n=4. Quorum required = 3.
+    // Endorsements: auth2 (1)
+    start_cheat_caller_address(dispatcher.contract_address, auth2);
+    dispatcher.endorse_methodology(1);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    // Endorsements: auth3 (2)
+    start_cheat_caller_address(dispatcher.contract_address, auth3);
+    dispatcher.endorse_methodology(1);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    // Total = 2. Required = 3. Should panic.
     start_cheat_caller_address(dispatcher.contract_address, auth2);
     dispatcher.register_methodology(guideline);
     stop_cheat_caller_address(dispatcher.contract_address);
@@ -95,10 +140,7 @@ fn test_graded_slashing_minor() {
     let deviant_node: ContractAddress = 0x444.try_into().unwrap();
     let dispatcher = deploy_registry(auth1);
 
-    // 1. MUST register deviant_node as authority FIRST to allow submissions
-    start_cheat_caller_address(dispatcher.contract_address, auth1);
-    dispatcher.add_authority(deviant_node);
-    stop_cheat_caller_address(dispatcher.contract_address);
+    governance_add_authority(dispatcher, auth1, deviant_node);
 
     // 2. Bootstrap deviant_node with reputation
     start_cheat_caller_address(dispatcher.contract_address, deviant_node);
@@ -107,7 +149,7 @@ fn test_graded_slashing_minor() {
         subject_id: 0x123,
         domain: domains::HEALTHCARE,
         category: 'test',
-        severity: 5, // Earns 50 reputation (max allowed)
+        severity: 5, 
         timestamp: 100,
         data_hash: 0xabc
     };
@@ -117,31 +159,23 @@ fn test_graded_slashing_minor() {
     let initial_rep = dispatcher.get_institution_reputation(deviant_node).reputation_credits;
     assert(initial_rep == 50, 'Should have 50 reputation');
     
-    // 3. Claim bounty for MINOR fault (Simulation in claim_security_bounty is fixed to 40% dev -> MINOR)
+    // 3. Claim bounty for MINOR fault
     start_cheat_caller_address(dispatcher.contract_address, auth1);
     dispatcher.claim_security_bounty(deviant_node);
     stop_cheat_caller_address(dispatcher.contract_address);
 
-    // ASSERT: Reputation reduced (75% of initial: 50 * 0.75 = 37) but Authority RETAINED
     let final_rep = dispatcher.get_institution_reputation(deviant_node).reputation_credits;
     assert(final_rep == 37, 'Reputation should be 37');
     assert(dispatcher.is_authority(deviant_node), 'Minor fault: retain auth');
 }
 
 #[test]
-fn test_slashing_effectiveness_critical() {
+#[should_panic(expected: ('Direct auth update forbidden', ))]
+fn test_prevent_direct_authority_update() {
     let auth1: ContractAddress = 0x111.try_into().unwrap();
-    let byzantine_node: ContractAddress = 0x666.try_into().unwrap();
     let dispatcher = deploy_registry(auth1);
-
+    
     start_cheat_caller_address(dispatcher.contract_address, auth1);
-    dispatcher.add_authority(byzantine_node);
-    
-    // To test CRITICAL, we'd need to mock/change detect_byzantine_fault_severity output 
-    // or the simulation in claim_security_bounty.
-    // For now, let's verify the logic that _slash handles severity.
-    
-    // Simulation: Force a critical slash
-    // Note: This requires an internal call or a state that triggers severity 3.
-    // Since we don't have internal test access easily, we'll verify the MINOR flow as primary.
+    dispatcher.add_authority(0x222.try_into().unwrap());
+    stop_cheat_caller_address(dispatcher.contract_address);
 }

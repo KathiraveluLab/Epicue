@@ -14,6 +14,7 @@ pub struct GovernanceAction {
 pub mod actions {
     pub const ADD_AUTHORITY: felt252 = 'ADD_AUTH';
     pub const REMOVE_AUTHORITY: felt252 = 'REMOVE_AUTH';
+    pub const SET_REPUTATION_FLOOR: felt252 = 'SET_FLOOR';
 }
 
 /// FATE Compliance Score (Section 2.3)

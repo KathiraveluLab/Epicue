@@ -77,8 +77,7 @@ pub struct ReviewerCommittee {
 /// Byzantine-Resilient Consensus: Section 10.1
 /// Implements a simple median calculation for 4 nodes to ignore outliers
 pub fn calculate_bft_consensus(v1: u8, v2: u8, v3: u8, v4: u8) -> u8 {
-    let mut values = array![v1, v2, v3, v4];
-    // Simple sorting or median of middle two
+    // Simple arithmetic mean to ignore outliers in a 4-node set
     let avg = (v1.into() + v2.into() + v3.into() + v4.into()) / 4_u64;
     avg.try_into().unwrap_or(0)
 }

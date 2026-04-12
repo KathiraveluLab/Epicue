@@ -1,6 +1,4 @@
 use epicue_core::core::types::{EpicueRecord, HealthRecord, domains};
-use epicue_core::core::metadata;
-use epicue_core::triad::validation;
 use starknet::ContractAddress;
 
 // ──────────────────────────────────────────────
@@ -92,6 +90,7 @@ use starknet::ContractAddress;
     fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
     fn set_reputation_floor(ref self: TContractState, new_floor: u64);
     fn get_reputation_floor(self: @TContractState) -> u64;
+    fn endorse_methodology(ref self: TContractState, id: u64);
 }
 
 // ──────────────────────────────────────────────
@@ -107,8 +106,8 @@ mod Registry {
     use epicue_core::core::types::{GeologicalRecord};
     use epicue_core::triad::validation::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
     use epicue_core::research::stats::{calculate_impact_score, calculate_collaboration_index, calculate_digital_reach_index};
-    use epicue_core::research::peer_review::{ReviewSession, calculate_consensus_delta, verify_bft_quorum};
-    use epicue_core::triad::auditor::{detect_byzantine_fault, detect_byzantine_fault_severity, fault_severity};
+    use epicue_core::research::peer_review::{ReviewSession, calculate_consensus_delta};
+    use epicue_core::triad::auditor::{detect_byzantine_fault_severity, fault_severity};
     use epicue_core::core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
     use epicue_core::triad::governance_voting::{Proposal, proposal_status};
     use epicue_core::core::schema::{DataSchema, validate_record_against_schema};
@@ -174,6 +173,9 @@ mod Registry {
         institution_report_counts: Map<ContractAddress, u64>,
         institutional_green_stature: Map<ContractAddress, u64>,
         reputation_floor: u64,
+        // Methodology BFT Quorum Storage
+        methodology_endorsements: Map<(u64, ContractAddress), bool>,
+        methodology_endorsement_counts: Map<u64, u64>,
     }
 
     // ── Events ─────────────────────────────────
@@ -364,7 +366,7 @@ mod Registry {
             assert_is_authority(self.authorities.read(caller));
             
             let id = self.proposal_count.read() + 1;
-            let proposal = Proposal {
+            let mut proposal = Proposal {
                 id,
                 proposer: caller,
                 target,
@@ -372,9 +374,14 @@ mod Registry {
                 votes_for: 1, // Proposer automatically votes for
                 votes_against: 0,
                 status: proposal_status::PENDING,
-                end_block: 0, // Simplified for now
+                end_block: 0, 
             };
             
+            // Auto-finalize if quorum reached (e.g. n=1)
+            if epicue_core::triad::governance_voting::is_finalizable(@proposal, self.authority_count.read()) {
+                proposal.status = proposal_status::APPROVED;
+            }
+
             self.proposals.write(id, proposal);
             self.proposal_count.write(id);
             self.votes.write((id, caller), true);
@@ -419,8 +426,18 @@ mod Registry {
                     self.authorities.write(proposal.target, true);
                     self.authority_count.write(self.authority_count.read() + 1);
                 }
+            } else if proposal.action_type == epicue_core::triad::governance::actions::REMOVE_AUTHORITY {
+                if self.authorities.read(proposal.target) {
+                    self.authorities.write(proposal.target, false);
+                    let current = self.authority_count.read();
+                    if current > 0 { self.authority_count.write(current - 1); }
+                }
+            } else if proposal.action_type == epicue_core::triad::governance::actions::SET_REPUTATION_FLOOR {
+                // For SET_FLOOR, we use the numeric value encoded in the target address
+                let target_felt: felt252 = proposal.target.into();
+                let new_floor: u64 = target_felt.try_into().unwrap_or(0);
+                self.reputation_floor.write(new_floor);
             }
-            // Logic for REMOVE_AUTH can be added here
             
             proposal.status = 'EXECUTED';
             self.proposals.write(proposal_id, proposal);
@@ -524,16 +541,16 @@ mod Registry {
             let caller = get_caller_address();
             assert_is_authority(self.authorities.read(caller));
             
-            // Hardened BFT Quorum: Methodology must be endorsed by the authority pool
+            // Hardened BFT Quorum: Methodology must be endorsed by the authority pool (2f+1)
             let auth_count = self.authority_count.read();
             assert(auth_count >= 1, 'No authorities registered'); 
             
-             // In a production BFT system, this would verify a multi-sig or quorum.
-             // Here we operationalizing the BFT threshold logic.
-            let quorum_reached = if auth_count == 1 { true } else { false }; // Placeholder for multi-authority sig
-            assert(quorum_reached, 'BFT Quorum not reached');
+            let next_id = self.methodology_count.read() + 1;
+            let endorsement_count = self.methodology_endorsement_counts.read(next_id);
+            // BFT Quorum logic: Section 10.1 (n=3f+1, quorum=2f+1)
+            assert(epicue_core::research::peer_review::verify_bft_quorum(endorsement_count.try_into().unwrap_or(0), auth_count.try_into().unwrap_or(0)), 'BFT Quorum not reached');
             
-            let id = self.methodology_count.read() + 1;
+            let id = next_id;
             guideline.id = id;
             guideline.author = caller;
             
@@ -723,7 +740,8 @@ mod Registry {
         }
 
         fn set_reputation_floor(ref self: ContractState, new_floor: u64) {
-            assert_is_authority(self.authorities.read(get_caller_address()));
+            // Lock behind governance: only the contract itself can call this via execute_proposal
+            assert(get_caller_address() == starknet::get_contract_address(), 'Direct floor update forbidden');
             self.reputation_floor.write(new_floor);
         }
 
@@ -732,8 +750,8 @@ mod Registry {
         }
 
         fn add_authority(ref self: ContractState, new_authority: ContractAddress) {
-            // Deprecated in favor of voting, but kept for legacy auths or simplified testing
-            assert_is_authority(self.authorities.read(get_caller_address()));
+            // Lock behind governance: only the contract itself can call this via execute_proposal
+            assert(get_caller_address() == starknet::get_contract_address(), 'Direct auth update forbidden');
             if !self.authorities.read(new_authority) {
                 self.authorities.write(new_authority, true);
                 self.authority_count.write(self.authority_count.read() + 1);
@@ -742,6 +760,17 @@ mod Registry {
 
         fn is_authority(self: @ContractState, address: ContractAddress) -> bool {
             self.authorities.read(address)
+        }
+
+        fn endorse_methodology(ref self: ContractState, id: u64) {
+            let caller = get_caller_address();
+            assert_is_authority(self.authorities.read(caller));
+            
+            assert(!self.methodology_endorsements.read((id, caller)), 'Already endorsed');
+            
+            self.methodology_endorsements.write((id, caller), true);
+            let current = self.methodology_endorsement_counts.read(id);
+            self.methodology_endorsement_counts.write(id, current + 1);
         }
     }
 
