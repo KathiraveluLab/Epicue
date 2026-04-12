@@ -23,4 +23,5 @@ pub mod domains {
     pub const HEALTHCARE: felt252 = 'healthcare';
     pub const WATER: felt252 = 'water';
     pub const INDUSTRY: felt252 = 'industry';
+    pub const EDUCATION: felt252 = 'education';
 }

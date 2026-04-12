@@ -339,3 +339,44 @@ fn test_authority_escalation() {
     
     assert(dispatcher.is_authority(auth3), 'Delegated authority fail');
 }
+
+#[test]
+fn test_validation_logic_education() {
+    use epicue_core::validation::check_domain_constraints;
+    
+    // Valid student feedback
+    check_domain_constraints(domains::EDUCATION, 'student_feedback', 2_u8);
+    
+    // Integrity check pass: academic integrity >= 3
+    check_domain_constraints(domains::EDUCATION, 'academic_integrity', 3_u8);
+}
+
+#[test]
+#[should_panic(expected: ('Integrity report min priority', ))]
+fn test_validation_logic_education_failure() {
+    use epicue_core::validation::check_domain_constraints;
+    
+    // Should fail: academic integrity < 3
+    check_domain_constraints(domains::EDUCATION, 'academic_integrity', 2_u8);
+}
+
+#[test]
+fn test_education_record_aggregation() {
+    let authority: ContractAddress = 0x123.try_into().unwrap();
+    let dispatcher = deploy_registry(authority);
+    
+    let mut record = EpicueRecord {
+        subject_id: 'student_001',
+        domain: domains::EDUCATION,
+        category: 'academic_integrity',
+        severity: 4_u8,
+        timestamp: 1712800000_u64,
+        data_hash: 'edu_hash',
+    };
+
+    start_cheat_caller_address(dispatcher.contract_address, authority);
+    dispatcher.submit_epicue_record(record);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    assert(dispatcher.get_domain_count(domains::EDUCATION) == 1_u64, 'Edu count fail');
+}

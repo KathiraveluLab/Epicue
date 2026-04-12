@@ -11,6 +11,7 @@ const DOMAINS = [
   { value: "healthcare", label: "Healthcare", icon: "[HC]" },
   { value: "water", label: "Water Quality", icon: "[WQ]" },
   { value: "industry", label: "Industrial Traceability", icon: "[IT]" },
+  { value: "education", label: "Higher Education", icon: "[ED]" },
 ];
 
 const CATEGORIES_BY_DOMAIN: Record<string, { value: string; label: string }[]> = {
@@ -31,6 +32,12 @@ const CATEGORIES_BY_DOMAIN: Record<string, { value: string; label: string }[]> =
     { value: "carbon_footprint", label: "Carbon Report" },
     { value: "safety_violation", label: "Safety Alert" },
     { value: "quality_assurance", label: "QA Failure" },
+  ],
+  education: [
+    { value: "academic_integrity", label: "Academic Integrity" },
+    { value: "student_feedback", label: "Student Feedback" },
+    { value: "inclusion_audit", label: "Inclusion Audit" },
+    { value: "resource_access", label: "Resource Access" },
   ],
 };
 

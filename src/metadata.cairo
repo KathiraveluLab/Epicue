@@ -18,6 +18,7 @@ pub fn get_default_domain_name(domain: felt252) -> felt252 {
     if domain == domains::HEALTHCARE { 'Healthcare' }
     else if domain == domains::WATER { 'Water Quality' }
     else if domain == domains::INDUSTRY { 'Industrial Traceability' }
+    else if domain == domains::EDUCATION { 'Higher Education' }
     else { 'Unknown Domain' }
 }
 
@@ -25,6 +26,7 @@ pub fn get_default_domain_desc(domain: felt252) -> felt252 {
     if domain == domains::HEALTHCARE { 'Patient efficacy & care reports' }
     else if domain == domains::WATER { 'Potability & leak alerts' }
     else if domain == domains::INDUSTRY { 'Steel mill audit & carbon trace' }
+    else if domain == domains::EDUCATION { 'Academic integrity & inclusion' }
     else { 'Project metadata pending' }
 }
 

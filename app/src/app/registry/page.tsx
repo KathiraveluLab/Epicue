@@ -135,6 +135,12 @@ export default function RegistryPage() {
                 domainKey="industry"
                 desc="Steel mill audit & carbon traceability" 
             />
+            <DomainCard 
+                name="Education" 
+                icon="[E]" 
+                domainKey="education"
+                desc="Academic integrity & inclusion audits" 
+            />
         </div>
 
         {/* Transparency info */}

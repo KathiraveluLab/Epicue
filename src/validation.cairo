@@ -21,5 +21,10 @@ pub fn check_domain_constraints(domain: felt252, category: felt252, severity: u8
         if category == 'carbon_footprint' {
             assert(severity >= 2_u8, 'Carbon report minimum priority');
         }
+    } else if domain == domains::EDUCATION {
+        // Academic integrity reports must be at least severity 3
+        if category == 'academic_integrity' {
+            assert(severity >= 3_u8, 'Integrity report min priority');
+        }
     }
 }
