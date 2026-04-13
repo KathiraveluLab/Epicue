@@ -41,13 +41,13 @@ export EPICUE_DEPLOY_TARGET=public
 The Epicue Portal identifies the Registry contract via environment variables to maintain institutional security and deployment flexibility.
 
 ### Environment Variables
-Configure the following in `portal-vite/.env.local`:
+Configure the following in `portal/.env.local`:
 
 - `VITE_REGISTRY_ADDRESS`: The deployed address of the Registry contract (e.g., `0x035fb...`).
 
 ### Running the Portal
 ```bash
-cd portal-vite
+cd portal
 npm install
 npm run dev
 ```
