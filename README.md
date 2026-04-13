@@ -31,13 +31,11 @@ The codebase is structured into logical layers to facilitate inter-institutional
 
 The Epicue Registry Portal provides a high-fidelity interface for institutional stakeholders to interact with the Starknet-native BFT registry.
 
-````carousel
 ![Registry Dashboard](portal/docs/screenshots/registry_home.png)
-<!-- slide -->
+
 ![Governance Interface](portal/docs/screenshots/governance_tab.png)
-<!-- slide -->
+
 ![Auditor Integrity Monitor](portal/docs/screenshots/auditor_tab.png)
-````
 
 ## Scientific Metrics & SDGs
 Epicue translates UN Sustainable Development Goals (SDGs) into STARK-proven metrics:
