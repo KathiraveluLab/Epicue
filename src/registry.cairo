@@ -90,6 +90,7 @@ use starknet::ContractAddress;
     fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
     fn set_reputation_floor(ref self: TContractState, new_floor: u64);
     fn get_reputation_floor(self: @TContractState) -> u64;
+    fn get_record_id(self: @TContractState, index: u64) -> felt252;
     fn endorse_methodology(ref self: TContractState, id: u64);
 }
 
@@ -135,6 +136,7 @@ mod Registry {
         authority_count: u64,
         // Transparency counters
         record_count: u64,
+        record_ids: Map<u64, felt252>,
         // On-chain aggregations for EQUISYS domains
         domain_counts: Map<felt252, u64>,
         // Governance Voting Storage
@@ -246,8 +248,11 @@ mod Registry {
         fn submit_record(ref self: ContractState, user_id: felt252, data_hash: felt252) {
             assert_is_authority(self.authorities.read(get_caller_address()));
             
+            
+            let count = self.record_count.read() + 1;
+            self.record_ids.write(count, user_id);
             self.records.write(user_id, data_hash);
-            self.record_count.write(self.record_count.read() + 1);
+            self.record_count.write(count);
             
             self.emit(Event::RecordSubmitted(RecordSubmitted { user_id, data_hash }));
         }
@@ -279,8 +284,11 @@ mod Registry {
             let patient_id = record.patient_id;
             self.health_records.write(patient_id, record);
             
+            
             // Increment global and domain count
-            self.record_count.write(self.record_count.read() + 1);
+            let count = self.record_count.read() + 1;
+            self.record_ids.write(count, patient_id);
+            self.record_count.write(count);
             let d_count = self.domain_counts.read(domains::HEALTHCARE);
             self.domain_counts.write(domains::HEALTHCARE, d_count + 1);
         }
@@ -327,8 +335,11 @@ mod Registry {
 
             self.epicue_records.write(subject_id, record);
             
+            
             // Increment global and domain count
-            self.record_count.write(self.record_count.read() + 1);
+            let count = self.record_count.read() + 1;
+            self.record_ids.write(count, subject_id);
+            self.record_count.write(count);
             let d_count = self.domain_counts.read(domain);
             self.domain_counts.write(domain, d_count + 1);
         }
@@ -657,8 +668,11 @@ mod Registry {
             // Store record
             self.epicue_records.write(subject_id, record);
             
+            
             // Update counts
-            self.record_count.write(self.record_count.read() + 1);
+            let count = self.record_count.read() + 1;
+            self.record_ids.write(count, subject_id);
+            self.record_count.write(count);
             let d_count = self.domain_counts.read(domain);
             self.domain_counts.write(domain, d_count + 1);
             
@@ -714,7 +728,11 @@ mod Registry {
             
             self.geological_records.write(subject_id, record);
             
+            
             // Update stats
+            let count = self.record_count.read() + 1;
+            self.record_ids.write(count, subject_id);
+            self.record_count.write(count);
             let d_count = self.domain_counts.read(domains::GEOSPATIAL);
             self.domain_counts.write(domains::GEOSPATIAL, d_count + 1);
             
@@ -747,6 +765,10 @@ mod Registry {
 
         fn get_reputation_floor(self: @ContractState) -> u64 {
             self.reputation_floor.read()
+        }
+
+        fn get_record_id(self: @ContractState, index: u64) -> felt252 {
+            self.record_ids.read(index)
         }
 
         fn add_authority(ref self: ContractState, new_authority: ContractAddress) {

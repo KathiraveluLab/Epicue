@@ -41,22 +41,22 @@ export EPICUE_DEPLOY_TARGET=public
 The Epicue Portal identifies the Registry contract via environment variables to maintain institutional security and deployment flexibility.
 
 ### Environment Variables
-Configure the following in `portal/.env.local`:
+Configure the following in `portal-vite/.env.local`:
 
-- `NEXT_PUBLIC_REGISTRY_ADDRESS`: The deployed address of the Registry contract (e.g., `0x035fb...`).
+- `VITE_REGISTRY_ADDRESS`: The deployed address of the Registry contract (e.g., `0x035fb...`).
 
 ### Running the Portal
 ```bash
-cd portal
+cd portal-vite
 npm install
 npm run dev
 ```
 
-The portal will be accessible at `http://localhost:3000`.
+The portal will be accessible at `http://localhost:3001`.
 
 ## Security & Maintenance
 - **Environment Isolation**: Local secrets are stored in `deployment/local.env`, while public credentials belong in `deployment/public.env`.
-- **Address Privacy**: Avoid hardcoding `CONTRACT_ADDRESS` in the source code; always prefer the `NEXT_PUBLIC_` prefixed environment variables.
+- **Address Privacy**: Avoid hardcoding `CONTRACT_ADDRESS` in the source code; always prefer the `VITE_` prefixed environment variables.
 - **Administrative Lock**: Upon deployment, the Registry is immediately locked to the decentralized Governor. All subsequent administrative actions must pass through a governance vote.
 
 ---

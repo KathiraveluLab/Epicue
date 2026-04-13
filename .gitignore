@@ -45,3 +45,4 @@ claude.md
 AGENTS.md
 CLAUDE.md
 .venv
+node_modules/

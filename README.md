@@ -17,15 +17,27 @@ Epicue is engineered for the untrusted Internet. Unlike typical centralized regi
 The codebase is structured into logical layers to facilitate inter-institutional scale-up:
 
 ```text
-├── src/
+├── src/# Cairo Core Implementation
 │   ├── core/           # Fundamental Logic (Access, Metadata, Types)
 │   ├── triad/          # The EQUISYS Triad (Validator, Auditor, Governor)
 │   ├── research/       # Scientific Productivity (BFT Peer Review, Methodology)
 │   ├── social/         # Equity & Inclusion (DRI, Reputation, Bounty)
 │   └── metrics/        # High-Level Analytics (Sustainability Ledger)
 ├── tests/              # Byzantine Resilience & Performance Tests
-└── portal/             # Next.js Thin Client
+└── portal-vite/        # Production-Grade Vite Client
 ```
+
+## Institutional Portal
+
+The Epicue Registry Portal provides a high-fidelity interface for institutional stakeholders to interact with the Starknet-native BFT registry.
+
+````carousel
+![Registry Dashboard](file:///home/pradeeban/Epicue/portal-vite/docs/screenshots/registry_home.png)
+<!-- slide -->
+![Governance Interface](file:///home/pradeeban/Epicue/portal-vite/docs/screenshots/governance_tab.png)
+<!-- slide -->
+![Auditor Integrity Monitor](file:///home/pradeeban/Epicue/portal-vite/docs/screenshots/auditor_tab.png)
+````
 
 ## Scientific Metrics & SDGs
 Epicue translates UN Sustainable Development Goals (SDGs) into STARK-proven metrics:
