@@ -59,6 +59,13 @@ To run a local Starknet node for development:
 ```
 Keep this running in a separate terminal while deploying.
 
+### Digital Portal
+To start the institutional interface:
+```bash
+./run_portal.sh
+```
+The portal will be available at `http://localhost:3001`.
+
 ### Deployment
 
 Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Guide](Deployment.md) for detailed instructions.

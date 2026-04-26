@@ -62,7 +62,15 @@ scarb build
 echo "--- Running Resilience Suite ---"
 snforge test
 
+echo "--- Preparing Digital Portal ---"
+if [ -d "portal" ]; then
+    cd portal
+    npm install
+    cd ..
+fi
+
 echo "--- Setup Complete ---"
 echo "The environment is ready. To deploy locally:"
 echo "1. In one terminal, run: './run_devnet.sh'"
 echo "2. In another terminal, run: './deployment/deploy.sh'"
+echo "3. Finally, start the UI: './run_portal.sh'"

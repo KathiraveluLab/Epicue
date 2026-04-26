@@ -63,7 +63,12 @@ echo "--- Declaring Registry Contract ---"
 echo "Declaring class..."
 # We use || true here because declare often fails if already declared
 DECLARE_OUT=$(sncast $SNCAST_GLOBAL --profile "$TARGET" declare --url "$STARKNET_RPC" --contract-name Registry 2>&1) || true
-echo "$DECLARE_OUT"
+
+if echo "$DECLARE_OUT" | grep -q "already declared"; then
+    echo "Registry class already declared. Skipping declaration."
+else
+    echo "$DECLARE_OUT"
+fi
 
 # Extraction strategy: Robustly pick the first 0x hex string (class hash)
 CLASS_HASH=$(echo "$DECLARE_OUT" | grep -ioE "0x[0-9a-f]{64}" | head -n 1)
@@ -90,3 +95,7 @@ echo "Target: $TARGET"
 echo "Address: $CONTRACT_ADDRESS"
 echo "Initial Authority: $STARKNET_ACCOUNT"
 echo "--------------------------------------------------"
+
+# Configure Portal
+echo "VITE_REGISTRY_ADDRESS=$CONTRACT_ADDRESS" > portal/.env.local
+echo "Updated portal/.env.local with the new Registry address."
