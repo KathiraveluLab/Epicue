@@ -22,7 +22,7 @@ if [ "$TARGET" == "local" ]; then
         --address "$STARKNET_ACCOUNT" \
         --private-key "$STARKNET_PRIVATE_KEY" \
         --type oz \
-        --silent || true
+        --silent 2>/dev/null || true
     SNCAST_GLOBAL="--account local --accounts-file deployment/accounts.json"
 elif [ "$TARGET" == "public" ]; then
     if [ -f "deployment/public.env" ]; then
@@ -48,6 +48,8 @@ check_local_node() {
     if [ "$TARGET" == "local" ]; then
         if ! curl -s $STARKNET_RPC > /dev/null; then
             echo "Error: Local node (Devnet) not detected at $STARKNET_RPC."
+            echo "Please start the node first in a separate terminal using:"
+            echo "  ./run_devnet.sh"
             exit 1
         fi
     fi
@@ -77,7 +79,9 @@ echo "Successfully identified Registry class hash: $CLASS_HASH"
 
 echo "--- Deploying Registry Instance ---"
 # Constructor takes initial_authority (ContractAddress)
-DEPLOY_OUT=$(sncast $SNCAST_GLOBAL --profile "$TARGET" deploy --url "$STARKNET_RPC" --class-hash "$CLASS_HASH" --constructor-calldata "$STARKNET_ACCOUNT")
+DEPLOY_OUT=$(sncast $SNCAST_GLOBAL --profile "$TARGET" deploy --url "$STARKNET_RPC" --class-hash "$CLASS_HASH" --arguments "$STARKNET_ACCOUNT" 2>&1)
+echo "$DEPLOY_OUT"
+
 CONTRACT_ADDRESS=$(echo "$DEPLOY_OUT" | grep -ioE "0x[0-9a-f]{64}" | head -n 1)
 
 echo "--------------------------------------------------"

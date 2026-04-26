@@ -1,4 +1,4 @@
-use epicue_core::research::stats::calculate_impact_score;
+// use epicue_core::research::stats::calculate_impact_score;
 
 pub fn calculate_sustainability_score(
     healthcare_impact: u64,

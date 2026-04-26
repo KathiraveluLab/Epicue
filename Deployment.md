@@ -60,4 +60,4 @@ The portal will be accessible at `http://localhost:3001`.
 - **Administrative Lock**: Upon deployment, the Registry is immediately locked to the decentralized Governor. All subsequent administrative actions must pass through a governance vote.
 
 ---
-*For a detailed walkthrough of the BFT features, see [walkthrough.md](file:///home/pradeeban/.gemini/antigravity/brain/a61fd118-f904-4455-a32c-44883f0b530f/walkthrough.md).*
+*For more information, see the [README](README.md).*

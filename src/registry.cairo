@@ -111,7 +111,7 @@ mod Registry {
     use epicue_core::triad::auditor::{detect_byzantine_fault_severity, fault_severity};
     use epicue_core::core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
     use epicue_core::triad::governance_voting::{Proposal, proposal_status};
-    use epicue_core::core::schema::{DataSchema, validate_record_against_schema};
+    use epicue_core::core::schema::DataSchema;
     use epicue_core::research::discovery::{ResearchDiscovery, filter_high_impact_domains};
     use epicue_core::audit_registry::{AuditEvidence, verify_evidence_integrity};
     use epicue_core::research::methodology::{MethodologyGuideline, calculate_scientific_visibility};

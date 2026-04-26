@@ -45,20 +45,19 @@ Epicue translates UN Sustainable Development Goals (SDGs) into STARK-proven metr
 
 ## Getting Started
 
-### Prerequisites
-- [Scarb](https://docs.swmansion.com/scarb/) (Cairo package manager)
-- [Starknet Foundry (snforge)](https://foundry-rs.github.io/starknet-foundry/)
-
-### Build & Audit
-Compile the BFT-hardened contracts:
+### Project Setup
+Initialize the environment, install dependencies, and run initial verification (build & test):
 ```bash
-scarb build
+chmod +x setup.sh
+./setup.sh
 ```
 
-Run the resilience suite:
+### Local Development
+To run a local Starknet node for development:
 ```bash
-snforge test
+./run_devnet.sh
 ```
+Keep this running in a separate terminal while deploying.
 
 ### Deployment
 
