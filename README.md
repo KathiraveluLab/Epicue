@@ -62,7 +62,7 @@ snforge test
 
 ### Deployment
 
-Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Guide](file:///home/pradeeban/Epicue/Deployment.md) for detailed instructions.
+Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Guide](Deployment.md) for detailed instructions.
 
 1. **Configure Environment**: Choose your target.
    ```bash
