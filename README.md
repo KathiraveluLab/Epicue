@@ -66,6 +66,9 @@ To start the institutional interface:
 ```
 The portal will be available at `http://localhost:3001`.
 
+### Detailed Walkthrough
+See the [Tutorial Guide](Tutorial.md) for a step-by-step walkthrough of institutional features.
+
 ### Deployment
 
 Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Guide](Deployment.md) for detailed instructions.
