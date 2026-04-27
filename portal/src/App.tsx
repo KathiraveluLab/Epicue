@@ -187,7 +187,8 @@ function TransmissionRow({ id }: { id: number }) {
   );
 }
 
-function ProposalRow({ id }: { id: number }) {
+function ProposalRow({ id, onConnectClick }: { id: number, onConnectClick: () => void }) {
+  const { address } = useAccount();
   const { data } = useReadContract({
     abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -196,7 +197,7 @@ function ProposalRow({ id }: { id: number }) {
   });
 
   const proposal = data as any;
-  const { send: voteSupport } = useSendTransaction({
+  const { send: voteSupport, isPending: isSupporting } = useSendTransaction({
     calls: [
       {
         contractAddress: CONTRACT_ADDRESS as `0x${string}`,
@@ -206,7 +207,7 @@ function ProposalRow({ id }: { id: number }) {
     ]
   });
 
-  const { send: voteOppose } = useSendTransaction({
+  const { send: voteOppose, isPending: isOpposing } = useSendTransaction({
     calls: [
       {
         contractAddress: CONTRACT_ADDRESS as `0x${string}`,
@@ -217,6 +218,22 @@ function ProposalRow({ id }: { id: number }) {
   });
 
   if (!proposal) return null;
+
+  const handleSupport = () => {
+    if (!address) {
+      onConnectClick();
+      return;
+    }
+    voteSupport();
+  };
+
+  const handleOppose = () => {
+    if (!address) {
+      onConnectClick();
+      return;
+    }
+    voteOppose();
+  };
 
   // Safe string conversion for felts
   const actionType = typeof proposal.action_type === 'bigint' ? decodeShortString(proposal.action_type.toString()) : String(proposal.action_type);
@@ -247,16 +264,18 @@ function ProposalRow({ id }: { id: number }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <button 
-          onClick={() => voteSupport()}
-          className="py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold text-sm hover:bg-emerald-100 transition-all active:scale-95"
+          onClick={handleSupport}
+          disabled={isSupporting}
+          className="py-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold text-sm hover:bg-emerald-100 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
         >
-          Support
+          {isSupporting ? 'Signing...' : 'Support'}
         </button>
         <button 
-          onClick={() => voteOppose()}
-          className="py-3 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 font-bold text-sm hover:bg-rose-100 transition-all active:scale-95"
+          onClick={handleOppose}
+          disabled={isOpposing}
+          className="py-3 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 font-bold text-sm hover:bg-rose-100 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
         >
-          Oppose
+          {isOpposing ? 'Signing...' : 'Oppose'}
         </button>
       </div>
     </div>
@@ -422,7 +441,7 @@ function RegistrySection() {
   );
 }
 
-function GovernanceSection({ onNewProposalClick }: { onNewProposalClick: () => void }) {
+function GovernanceSection({ onNewProposalClick, onConnectClick }: { onNewProposalClick: () => void, onConnectClick: () => void }) {
   const { data: countData } = useReadContract({
     abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -450,7 +469,7 @@ function GovernanceSection({ onNewProposalClick }: { onNewProposalClick: () => v
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {proposalCount > 0 ? (
           [...Array(proposalCount)].map((_, i) => (
-            <ProposalRow key={i + 1} id={i + 1} />
+            <ProposalRow key={i + 1} id={i + 1} onConnectClick={onConnectClick} />
           ))
         ) : (
           <div className="col-span-full p-12 rounded-3xl bg-white border border-dashed border-slate-200 text-center text-slate-400">
@@ -568,7 +587,12 @@ export default function App() {
 
           {/* Content Area */}
           {activeTab === 'registry' && <RegistrySection />}
-          {activeTab === 'governance' && <GovernanceSection onNewProposalClick={() => setIsProposalModalOpen(true)} />}
+          {activeTab === 'governance' && (
+            <GovernanceSection 
+              onNewProposalClick={() => setIsProposalModalOpen(true)} 
+              onConnectClick={() => setIsWalletModalOpen(true)} 
+            />
+          )}
           {activeTab === 'auditor' && <AuditorSection />}
         </main>
 
