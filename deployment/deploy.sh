@@ -70,8 +70,13 @@ else
     echo "$DECLARE_OUT"
 fi
 
-# Extraction strategy: Robustly pick the first 0x hex string (class hash)
-CLASS_HASH=$(echo "$DECLARE_OUT" | grep -ioE "0x[0-9a-f]{64}" | head -n 1)
+# Extraction strategy: Robustly pick the hex string following "Class Hash:"
+CLASS_HASH=$(echo "$DECLARE_OUT" | grep "Class Hash:" | grep -ioE "0x[0-9a-f]{64}" | head -n 1)
+
+# Fallback: if not found (e.g. already declared), it might be elsewhere in the output
+if [ -z "$CLASS_HASH" ]; then
+    CLASS_HASH=$(echo "$DECLARE_OUT" | grep -ioE "0x[0-9a-f]{64}" | head -n 1)
+fi
 
 if [ -z "$CLASS_HASH" ]; then
     echo "Error: Could not determine class hash for Registry."

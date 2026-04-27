@@ -15,74 +15,63 @@ Epicue is not just a database; it is a **verifiable institutional agreement engi
 
 ---
 
-## 2. Walkthrough: Registering a Public Service
+## 2. Setting Up the Simulation
 
-Once the portal is open at `http://localhost:3001`, follow these steps:
+To start with a fully populated institutional environment, run the following seeding scripts:
 
-### A. Monitor System Integrity
-1. Navigate to the **Auditor** tab.
-2. View the **System Integrity** score (e.g., STABLE/98).
-3. This dashboard monitors scientific telemetry for Byzantine faults in real-time.
+### A. Populate Records
+Submit several verified subject records and institutional history:
+```bash
+./deployment/populate.sh
+```
 
-### B. View Verified Transmissions
-1. Go to the **Registry** tab.
-2. Observe the **Verified Transmissions** counter. Each transmission represents a scientifically-proven record on Starknet.
-3. Scroll down to see the **Latest Transmissions** list.
+### B. Seed Governance Proposals
+Queue up several institutional change proposals (Add/Remove nodes, Reset Floors):
+```bash
+./deployment/seed_proposals.sh
+```
 
-### C. Populate Test Data
-If your registry is empty, you can seed it with simulated institutional data:
-1. In your terminal, run:
+---
+
+## 3. Using the Institutional Portal (`http://localhost:3001`)
+
+### A. The Registry Dashboard
+Monitor the live state of your institutional network:
+- **Verified Transmissions**: Every record here is scientifically-proven on Starknet.
+- **Institutional Integrity**: A live FATE score (0-100). Starts at `40` (REVIEW_REQUIRED) and grows with activity.
+- **BFT Quorum Status (2f + 1)**: Displays the current consensus hardening. The system requires $2f+1$ nodes for a valid quorum.
+
+### B. Managing Governance
+Epicue is governed by proposals. Go to the **Governance** tab:
+1. **Vote Support**: Select an active proposal (e.g., "Add Health Authority") and cast your supporting vote.
+2. **Execute**: Once the dukungan reaches the required threshold, the proposal can be **Executed** to apply the change on-chain.
+3. **Automate**: To onboard a specific authority node automatically, run:
    ```bash
-   ./deployment/populate.sh
+   ./deployment/govern.sh <NODE_ADDRESS>
    ```
-2. Refresh the portal to see the new records appearing in real-time.
+
+### C. Auditing Byzantine Faults
+Navigate to the **Auditor** tab to test the system's resilience:
+- Identify a non-compliant or malicious node address.
+- Submit a **Security Signal**.
+- **Slashing**: If the Governor validates the fault, the node's reputation is slashed, and the **System Integrity** score adjusts to reflect the risk.
 
 ---
 
-## 3. Simulating Byzantine Resilience
-
-Epicue is designed to survive malicious environments. You can observe the resilience in the **Auditor Integrity Monitor** tab.
-
-### Detecting a Fault
-In a production environment, different nodes might report different data. In our local simulation:
-1. The **Auditor Dashboard** tracks "Integrity Deviations."
-2. If a record is submitted that violates the **FATE Compliance Score** (Fairness, Accountability, Transparency, Ethics), a "Byzantine Flag" is raised.
-3. Observe how the **Institutional Reputation** of the submitter decays immediately upon a flagged fault.
-
-### Graded Slashing
-If the fault is categorized as **Critical**, the Governor may initiate a slashing event.
-- **Minor Faults**: Result in a temporary suspension of voting power.
-- **Critical Faults**: Result in the architectural revocation of authority.
-
----
-
-## 4. Understanding the Metrics
+## 4. Understanding the Scientific Metrics
 
 Epicue translates raw data into Stark-proven social metrics:
 
-- **Digital Reach Index (DRI)**: 
-    - *Scenario*: Record a service that provides digital connectivity to a rural area.
-    - *Result*: The DRI score will rise, reflecting higher institutional social equity.
-- **Sustainability Ledger**: 
-    - *Scenario*: Record manufacturing data with high environmental impact.
-    - *Result*: The Green Stature Index will track this longitudinal decay, and it will be visible in the analytics charts.
+- **FATE Compliance**: Fairness, Accountability, Transparency, and Ethics. This score is calculated dynamically based on record density and node honesty.
+- **Sustainability Ledger**: Used for longitudinal tracking of environmental impact data.
+- **Digital Reach Index (DRI)**: Tracks the institutional commitment to digital connectivity.
 
 ---
 
-## 5. Participating in Governance
-
-The **EQUISYS Governor** ensures that no single entity can unilaterally change the rules.
-1. Navigate to the **Governance** tab.
-2. View active **Threshold Modification** proposals.
-3. As the `Initial Authority` (your local account), you can cast votes on these proposals.
-4. Once a proposal passes the $2f+1$ quorum, the Registry configuration updates automatically on-chain.
-
----
-
-## Next Steps
-- **Integrate your own schemas**: Modify `src/core/schema.cairo` to define new public service data types.
-- **Scale to Testnet**: Run `./deployment/deploy.sh` with `EPICUE_DEPLOY_TARGET=public` to move from simulation to the real Starknet Sepolia network.
-- **Explore the Tests**: Read `tests/test_bft.cairo` to see how these BFT scenarios are mathematically proven.
+## 5. Next Steps
+- **Integrate your own schemas**: Modify `src/registry.cairo` to define new institutional data types.
+- **Scale to Testnet**: Run `./deployment/deploy.sh` with `EPICUE_DEPLOY_TARGET=public` to move from simulation to Starknet Sepolia.
+- **Explore the Tests**: Read `tests/test_bft.cairo` to see how BFT scenarios are mathematically proven.
 
 ---
 *Strengthening citizens' trust through objective cryptographic guarantees.*

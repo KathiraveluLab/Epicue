@@ -157,6 +157,13 @@ export const CONTRACT_ABI = [
       },
       {
         type: "function",
+        name: "get_authority_count",
+        inputs: [],
+        outputs: [{ type: "core::integer::u64" }],
+        state_mutability: "view",
+      },
+      {
+        type: "function",
         name: "claim_security_bounty",
         inputs: [{ name: "byzantine_node", type: "core::starknet::contract_address::ContractAddress" }],
         outputs: [],

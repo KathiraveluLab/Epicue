@@ -141,19 +141,20 @@ function TransmissionRow({ id }: { id: number }) {
 }
 
 function ProposalRow({ id }: { id: number }) {
-  const { data: proposal } = useReadContract({
+  const { data } = useReadContract({
     abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS as `0x${string}`,
     functionName: 'get_proposal',
-    args: [BigInt(id)],
-  }) as any;
+    args: [BigInt(id).toString()],
+  });
 
+  const proposal = data as any;
   const { send: voteSupport } = useSendTransaction({
     calls: [
       {
         contractAddress: CONTRACT_ADDRESS as `0x${string}`,
         entrypoint: 'vote_on_proposal',
-        calldata: [BigInt(id), 1],
+        calldata: [BigInt(id).toString(), '1'],
       }
     ]
   });
@@ -163,18 +164,20 @@ function ProposalRow({ id }: { id: number }) {
       {
         contractAddress: CONTRACT_ADDRESS as `0x${string}`,
         entrypoint: 'vote_on_proposal',
-        calldata: [BigInt(id), 0],
+        calldata: [BigInt(id).toString(), '0'],
       }
     ]
   });
 
   if (!proposal) return null;
 
-  const actionType = typeof proposal.action_type === 'bigint' ? decodeShortString(proposal.action_type.toString()) : proposal.action_type;
-  const status = typeof proposal.status === 'bigint' ? decodeShortString(proposal.status.toString()) : proposal.status;
+  // Safe string conversion for felts
+  const actionType = typeof proposal.action_type === 'bigint' ? decodeShortString(proposal.action_type.toString()) : String(proposal.action_type);
+  const status = typeof proposal.status === 'bigint' ? decodeShortString(proposal.status.toString()) : String(proposal.status);
 
-  const votesFor = Number(proposal.votes_for);
-  const votesAgainst = Number(proposal.votes_against);
+  // Safe number conversion for counters
+  const votesFor = proposal.votes_for ? Number(proposal.votes_for) : 0;
+  const votesAgainst = proposal.votes_against ? Number(proposal.votes_against) : 0;
   const totalVotes = votesFor + votesAgainst;
   const progress = totalVotes > 0 ? (votesFor / totalVotes) * 100 : 0;
 
@@ -215,7 +218,7 @@ function ProposalRow({ id }: { id: number }) {
 
 function NewProposalModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const [target, setTarget] = useState('');
-  const [type, setType] = useState('1'); // Default: ADD_AUTHORITY
+  const [type, setType] = useState('ADD_AUTH'); // Default: ADD_AUTHORITY
 
   const { send: propose } = useSendTransaction({
     calls: [
@@ -243,9 +246,9 @@ function NewProposalModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
               onChange={(e) => setType(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-violet-500/50"
             >
-              <option value="1">Add Authority Node</option>
-              <option value="2">Remove Authority Node</option>
-              <option value="3">Adjust Reputation Floor</option>
+              <option value="ADD_AUTH">Add Authority Node</option>
+              <option value="REMOVE_AUTH">Remove Authority Node</option>
+              <option value="SET_FLOOR">Adjust Reputation Floor</option>
             </select>
           </div>
           
@@ -281,14 +284,41 @@ function NewProposalModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
 }
 
 function RegistrySection() {
-  const { data: count } = useReadContract({
+  const [displayLimit, setDisplayLimit] = useState(5);
+  const { data: countRaw } = useReadContract({
     abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS as `0x${string}`,
     functionName: 'get_record_count',
     args: [],
   });
 
-  const recordCount = count ? Number(count) : 0;
+  const { data: authCountRaw } = useReadContract({
+    abi: CONTRACT_ABI,
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    functionName: 'get_authority_count',
+    args: [],
+  });
+
+  const { data: scoreRaw } = useReadContract({
+    abi: CONTRACT_ABI,
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    functionName: 'get_compliance_score',
+    args: [],
+  });
+
+  const { data: labelRaw } = useReadContract({
+    abi: CONTRACT_ABI,
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    functionName: 'get_compliance_label',
+    args: [],
+  });
+
+  const recordCount = countRaw ? Number(countRaw) : 0;
+  const authCount = authCountRaw ? Number(authCountRaw) : 1;
+  const score = scoreRaw ? Number(scoreRaw) : 0;
+  const label = labelRaw ? decodeShortString(labelRaw.toString()).replace('EQUISYS_', '') : 'LOADING';
+  const f = Math.floor((authCount - 1) / 3);
+  const quorum = 2 * f + 1;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -306,14 +336,14 @@ function RegistrySection() {
         </div>
         
         <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
-          <p className="text-slate-500 text-sm font-medium mb-2">Active Protocols</p>
-          <h3 className="text-4xl font-bold text-slate-900">12</h3>
-          <p className="text-slate-600 text-[10px] mt-4 uppercase tracking-widest font-bold">FATE Compliance: High</p>
+          <p className="text-slate-500 text-sm font-medium mb-2">Institutional Integrity</p>
+          <h3 className="text-4xl font-bold text-slate-900">{score}</h3>
+          <p className="text-slate-600 text-[10px] mt-4 uppercase tracking-widest font-bold">FATE Status: {label}</p>
         </div>
 
         <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
-          <p className="text-slate-500 text-sm font-medium mb-2">BFT Quorum Status</p>
-          <h3 className="text-4xl font-bold text-violet-600">2f+1</h3>
+          <p className="text-slate-500 text-sm font-medium mb-2">BFT Quorum Status (2f + 1)</p>
+          <h3 className="text-4xl font-bold text-violet-600">{quorum}/{authCount}</h3>
           <p className="text-slate-600 text-[10px] mt-4 uppercase tracking-widest font-bold">Consensus Hardened</p>
         </div>
       </div>
@@ -321,14 +351,19 @@ function RegistrySection() {
       <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-xl font-semibold text-slate-900">Latest transmissions</h3>
-          <button className="text-slate-500 hover:text-violet-600 transition-colors text-sm flex items-center gap-2 font-medium">
-            View All <ChevronRight className="w-4 h-4" />
-          </button>
+          {recordCount > displayLimit && (
+            <button 
+              onClick={() => setDisplayLimit(recordCount)}
+              className="text-slate-500 hover:text-violet-600 transition-colors text-sm flex items-center gap-2 font-medium"
+            >
+              View All <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
         
         <div className="space-y-3">
           {recordCount > 0 ? (
-            [...Array(Math.min(recordCount, 5))].map((_, i) => (
+            [...Array(Math.min(recordCount, displayLimit))].map((_, i) => (
               <TransmissionRow key={recordCount - i} id={recordCount - i} />
             ))
           ) : (

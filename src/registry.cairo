@@ -76,6 +76,7 @@ use starknet::ContractAddress;
     fn register_schema(ref self: TContractState, domain: felt252, field_count: u8);
     fn add_authority(ref self: TContractState, new_authority: ContractAddress);
     fn is_authority(self: @TContractState, address: ContractAddress) -> bool;
+    fn get_authority_count(self: @TContractState) -> u64;
 
     // Advanced Phase-4 Primitives
     fn archive_audit_evidence(ref self: TContractState, evidence: epicue_core::audit_registry::AuditEvidence);
@@ -782,6 +783,10 @@ mod Registry {
 
         fn is_authority(self: @ContractState, address: ContractAddress) -> bool {
             self.authorities.read(address)
+        }
+
+        fn get_authority_count(self: @ContractState) -> u64 {
+            self.authority_count.read()
         }
 
         fn endorse_methodology(ref self: ContractState, id: u64) {
