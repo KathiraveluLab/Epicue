@@ -71,9 +71,56 @@ class ErrorBoundary extends Component<any, any> {
 
 // --- Components ---
 
-function Header() {
-  const { address } = useAccount();
+function WalletModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const { connect, connectors } = useConnect();
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+      <div className="relative top-[15%] w-full max-w-md h-fit bg-white border border-slate-200 rounded-[32px] p-8 shadow-2xl shadow-slate-200/50 mb-20">
+        <h3 className="text-2xl font-bold mb-2 text-slate-900 leading-tight">Institutional Access</h3>
+        <p className="text-slate-500 text-sm mb-8 font-medium">Select a verifiable Starknet provider to interact with the Triad.</p>
+        
+        <div className="space-y-4">
+          {connectors.map((connector) => {
+            const isInstalled = connector.available();
+            return (
+              <button
+                key={connector.id}
+                disabled={!isInstalled}
+                onClick={() => { connect({ connector }); onClose(); }}
+                className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all group ${
+                  isInstalled ? 'border-slate-200 hover:border-violet-500 shadow-sm hover:shadow-violet-600/10' : 'opacity-50 grayscale cursor-not-allowed border-dashed'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-900">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-slate-900">{connector.id.charAt(0).toUpperCase() + connector.id.slice(1)}</div>
+                    {!isInstalled && <div className="text-[10px] text-rose-500 font-bold uppercase tracking-widest">Not Installed</div>}
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-violet-500" />
+              </button>
+            );
+          })}
+        </div>
+        
+        <button 
+          onClick={onClose}
+          className="w-full mt-6 py-4 rounded-2xl bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all text-sm uppercase tracking-widest"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Header({ onConnectClick }: { onConnectClick: () => void }) {
+  const { address } = useAccount();
   const { disconnect } = useDisconnect();
 
   return (
@@ -99,8 +146,8 @@ function Header() {
             </button>
           ) : (
             <button 
-              onClick={() => connect({ connector: connectors[0] })}
-              className="px-5 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 transition-all shadow-lg shadow-violet-600/30"
+              onClick={onConnectClick}
+              className="px-5 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 transition-all shadow-lg shadow-violet-500/30"
             >
               Connect Wallet
             </button>
@@ -233,8 +280,8 @@ function NewProposalModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="w-full max-w-lg bg-white border border-slate-200 rounded-[32px] p-8 shadow-2xl shadow-slate-200/50">
+    <div className="fixed inset-0 z-[100] flex justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+      <div className="relative top-[15%] w-full max-w-lg h-fit bg-white border border-slate-200 rounded-[32px] p-8 shadow-2xl shadow-slate-200/50 mb-20">
         <h3 className="text-2xl font-bold mb-2 text-slate-900">New Institutional Proposal</h3>
         <p className="text-slate-500 text-sm mb-8">Initiate a system-wide consensus action.</p>
         
@@ -375,8 +422,7 @@ function RegistrySection() {
   );
 }
 
-function GovernanceSection() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+function GovernanceSection({ onNewProposalClick }: { onNewProposalClick: () => void }) {
   const { data: countData } = useReadContract({
     abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -394,14 +440,12 @@ function GovernanceSection() {
           <p className="text-slate-500 text-sm mt-1">Multi-disciplinary consensus management</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => onNewProposalClick()}
           className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-all shadow-lg shadow-violet-600/30"
         >
           <Plus className="w-5 h-5" /> New Proposal
         </button>
       </div>
-      
-      <NewProposalModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {proposalCount > 0 ? (
@@ -491,11 +535,13 @@ function AuditorSection() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'registry' | 'governance' | 'auditor'>('registry');
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-violet-500/20">
-        <Header />
+        <Header onConnectClick={() => setIsWalletModalOpen(true)} />
         
         <main className="max-w-7xl mx-auto px-6 py-12">
           {/* Tab Navigation */}
@@ -522,9 +568,12 @@ export default function App() {
 
           {/* Content Area */}
           {activeTab === 'registry' && <RegistrySection />}
-          {activeTab === 'governance' && <GovernanceSection />}
+          {activeTab === 'governance' && <GovernanceSection onNewProposalClick={() => setIsProposalModalOpen(true)} />}
           {activeTab === 'auditor' && <AuditorSection />}
         </main>
+
+        <WalletModal isOpen={isWalletModalOpen} onClose={() => setIsWalletModalOpen(false)} />
+        <NewProposalModal isOpen={isProposalModalOpen} onClose={() => setIsProposalModalOpen(false)} />
 
         <footer className="border-t border-slate-200 py-12 mt-20 bg-white">
           <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-slate-500 text-xs font-bold tracking-wider">

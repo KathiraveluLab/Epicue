@@ -15,7 +15,27 @@ Epicue is not just a database; it is a **verifiable institutional agreement engi
 
 ---
 
-## 2. Setting Up the Simulation
+## 2. Institutional Environment Setup (Wallets)
+
+To interact with the governance and auditing features from the Portal, you need a Starknet browser wallet.
+
+### A. Install a Wallet
+Download one of the following for your browser (**Chrome, Firefox, Brave, or Edge**):
+*   [Argent X (Recommended)](https://www.argent.xyz/argent-x/)
+*   [Braavos Wallet](https://braavos.app/)
+
+### B. Configure for Local Devnet
+Once installed, you must connect the wallet to your local simulation environment:
+1. Open the wallet and go to **Settings** -> **Developer Settings**.
+2. Add a **Custom Network**:
+   - **Name**: `Local Devnet`
+   - **RPC URL**: `http://localhost:5050`
+   - **Chain ID**: `SN_DEVNET`
+3. Switch your wallet to this network before connecting to the Portal.
+
+---
+
+## 3. Setting Up the Simulation
 
 To start with a fully populated institutional environment, run the following seeding scripts:
 
