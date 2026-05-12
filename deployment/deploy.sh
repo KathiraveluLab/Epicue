@@ -71,11 +71,11 @@ else
 fi
 
 # Extraction strategy: Robustly pick the hex string following "Class Hash:"
-CLASS_HASH=$(echo "$DECLARE_OUT" | grep "Class Hash:" | grep -ioE "0x[0-9a-f]{64}" | head -n 1)
+CLASS_HASH=$(echo "$DECLARE_OUT" | grep "Class Hash:" | grep -ioE "0x[0-9a-f]+" | head -n 1)
 
 # Fallback: if not found (e.g. already declared), it might be elsewhere in the output
 if [ -z "$CLASS_HASH" ]; then
-    CLASS_HASH=$(echo "$DECLARE_OUT" | grep -ioE "0x[0-9a-f]{64}" | head -n 1)
+    CLASS_HASH=$(echo "$DECLARE_OUT" | grep -ioE "0x[0-9a-f]+" | head -n 1)
 fi
 
 if [ -z "$CLASS_HASH" ]; then
@@ -92,7 +92,7 @@ echo "--- Deploying Registry Instance ---"
 DEPLOY_OUT=$(sncast $SNCAST_GLOBAL --profile "$TARGET" deploy --url "$STARKNET_RPC" --class-hash "$CLASS_HASH" --arguments "$STARKNET_ACCOUNT" 2>&1)
 echo "$DEPLOY_OUT"
 
-CONTRACT_ADDRESS=$(echo "$DEPLOY_OUT" | grep -ioE "0x[0-9a-f]{64}" | head -n 1)
+CONTRACT_ADDRESS=$(echo "$DEPLOY_OUT" | grep -ioE "0x[0-9a-f]+" | head -n 1)
 
 echo "--------------------------------------------------"
 echo "Epicue Registry Deployed Successfully!"
