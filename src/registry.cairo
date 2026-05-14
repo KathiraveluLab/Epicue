@@ -39,8 +39,9 @@ use starknet::ContractAddress;
     // Governance Voting
     fn propose_action(ref self: TContractState, target: ContractAddress, action_type: felt252) -> u64;
     fn vote_on_proposal(ref self: TContractState, proposal_id: u64, support: bool);
+    fn finalize_voting(ref self: TContractState, proposal_id: u64);
     fn execute_proposal(ref self: TContractState, proposal_id: u64);
-    fn get_proposal(self: @TContractState, proposal_id: u64) -> epicue_core::triad::governance_voting::Proposal;
+    fn get_proposal(self: @TContractState, proposal_id: u64) -> epicue_core::triad::governor::Proposal;
     fn get_proposal_count(self: @TContractState) -> u64;
 
     // Digital Inclusion & Delegation
@@ -106,18 +107,18 @@ mod Registry {
     use epicue_core::social::advocate::{Advocate};
     use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing, apply_reputation_decay};
     use epicue_core::core::types::{GeologicalRecord};
-    use epicue_core::triad::validation::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
-    use epicue_core::research::stats::{calculate_impact_score, calculate_collaboration_index, calculate_digital_reach_index};
-    use epicue_core::research::peer_review::{ReviewSession, calculate_consensus_delta};
+    use epicue_core::triad::validator::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
     use epicue_core::triad::auditor::{detect_byzantine_fault_severity, fault_severity};
+    use epicue_core::triad::governor::{Proposal, proposal_status};
+    use epicue_core::research::stats::{calculate_impact_score, calculate_collaboration_index, calculate_digital_reach_index};
     use epicue_core::core::metadata::{get_default_domain_name, get_default_domain_desc, get_fate_pillar_desc};
-    use epicue_core::triad::governance_voting::{Proposal, proposal_status};
     use epicue_core::core::schema::DataSchema;
     use epicue_core::research::discovery::{ResearchDiscovery, filter_high_impact_domains};
     use epicue_core::audit_registry::{AuditEvidence, verify_evidence_integrity};
     use epicue_core::research::methodology::{MethodologyGuideline, calculate_scientific_visibility};
     use epicue_core::metrics::sustainability::{SustainabilityRecord, calculate_green_stature_gain, validate_industry_benchmark};
     use epicue_core::metrics::analytics::{calculate_sustainability_score, calculate_growth_rate};
+    use epicue_core::research::peer_review::{ReviewSession, calculate_consensus_delta};
     use starknet::{get_caller_address, get_block_timestamp};
     use starknet::ContractAddress;
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -141,7 +142,7 @@ mod Registry {
         // On-chain aggregations for EQUISYS domains
         domain_counts: Map<felt252, u64>,
         // Governance Voting Storage
-        proposals: Map<u64, epicue_core::triad::governance_voting::Proposal>,
+        proposals: Map<u64, epicue_core::triad::governor::Proposal>,
         proposal_count: u64,
         votes: Map<(u64, ContractAddress), bool>, // (proposal_id, voter) -> has_voted
         // Digital Inclusion Storage
@@ -366,11 +367,11 @@ mod Registry {
         }
 
         fn get_compliance_score(self: @ContractState) -> u8 {
-            epicue_core::triad::governance::calculate_fate_score(self.record_count.read(), self.authority_count.read())
+            epicue_core::triad::governor::calculate_fate_score(self.record_count.read(), self.authority_count.read())
         }
 
         fn get_compliance_label(self: @ContractState) -> felt252 {
-            epicue_core::triad::governance::get_compliance_label(self.get_compliance_score())
+            epicue_core::triad::governor::get_compliance_label(self.get_compliance_score())
         }
 
         fn propose_action(ref self: ContractState, target: ContractAddress, action_type: felt252) -> u64 {
@@ -390,7 +391,7 @@ mod Registry {
             };
             
             // Auto-finalize if quorum reached (e.g. n=1)
-            if epicue_core::triad::governance_voting::is_finalizable(@proposal, self.authority_count.read()) {
+            if epicue_core::triad::governor::is_finalizable(@proposal, self.authority_count.read()) {
                 proposal.status = proposal_status::APPROVED;
             }
 
@@ -416,35 +417,38 @@ mod Registry {
             }
             
             self.votes.write((proposal_id, caller), true);
-            
-            // Check if threshold reached
-            if epicue_core::triad::governance_voting::is_finalizable(@proposal, self.authority_count.read()) {
+            self.proposals.write(proposal_id, proposal);
+            self.finalize_voting(proposal_id);
+        }
+
+        fn finalize_voting(ref self: ContractState, proposal_id: u64) {
+            let mut proposal = self.proposals.read(proposal_id);
+            if epicue_core::triad::governor::is_finalizable(@proposal, self.authority_count.read()) {
                 if proposal.votes_for > proposal.votes_against {
                     proposal.status = proposal_status::APPROVED;
                 } else {
                     proposal.status = proposal_status::REJECTED;
                 }
+                self.proposals.write(proposal_id, proposal);
             }
-            
-            self.proposals.write(proposal_id, proposal);
         }
 
         fn execute_proposal(ref self: ContractState, proposal_id: u64) {
             let mut proposal = self.proposals.read(proposal_id);
             assert(proposal.status == proposal_status::APPROVED, 'Not approved');
             
-            if proposal.action_type == epicue_core::triad::governance::actions::ADD_AUTHORITY {
+            if proposal.action_type == epicue_core::triad::governor::actions::ADD_AUTHORITY {
                 if !self.authorities.read(proposal.target) {
                     self.authorities.write(proposal.target, true);
                     self.authority_count.write(self.authority_count.read() + 1);
                 }
-            } else if proposal.action_type == epicue_core::triad::governance::actions::REMOVE_AUTHORITY {
+            } else if proposal.action_type == epicue_core::triad::governor::actions::REMOVE_AUTHORITY {
                 if self.authorities.read(proposal.target) {
                     self.authorities.write(proposal.target, false);
                     let current = self.authority_count.read();
                     if current > 0 { self.authority_count.write(current - 1); }
                 }
-            } else if proposal.action_type == epicue_core::triad::governance::actions::SET_REPUTATION_FLOOR {
+            } else if proposal.action_type == epicue_core::triad::governor::actions::SET_REPUTATION_FLOOR {
                 // For SET_FLOOR, we use the numeric value encoded in the target address
                 let target_felt: felt252 = proposal.target.into();
                 let new_floor: u64 = target_felt.try_into().unwrap_or(0);
@@ -455,7 +459,7 @@ mod Registry {
             self.proposals.write(proposal_id, proposal);
         }
 
-        fn get_proposal(self: @ContractState, proposal_id: u64) -> epicue_core::triad::governance_voting::Proposal {
+        fn get_proposal(self: @ContractState, proposal_id: u64) -> epicue_core::triad::governor::Proposal {
             self.proposals.read(proposal_id)
         }
 

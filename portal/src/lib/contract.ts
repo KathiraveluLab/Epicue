@@ -35,7 +35,7 @@ export const CONTRACT_ABI = [
   },
   {
     type: "struct",
-    name: "epicue_core::triad::governance_voting::Proposal",
+    name: "epicue_core::triad::governor::Proposal",
     members: [
       { name: "id", type: "core::integer::u64" },
       { name: "proposer", type: "core::starknet::contract_address::ContractAddress" },
@@ -145,7 +145,7 @@ export const CONTRACT_ABI = [
         type: "function",
         name: "get_proposal",
         inputs: [{ name: "proposal_id", type: "core::integer::u64" }],
-        outputs: [{ type: "epicue_core::triad::governance_voting::Proposal" }],
+        outputs: [{ type: "epicue_core::triad::governor::Proposal" }],
         state_mutability: "view",
       },
       {

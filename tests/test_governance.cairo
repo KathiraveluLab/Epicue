@@ -1,6 +1,6 @@
 use epicue_core::registry::{IRegistryDispatcher, IRegistryDispatcherTrait};
-use epicue_core::triad::governance_voting::{proposal_status};
-use epicue_core::triad::governance::actions;
+use epicue_core::triad::governor::{proposal_status};
+use epicue_core::triad::governor::actions;
 use starknet::ContractAddress;
 use snforge_std::{declare, ContractClassTrait, DeclareResult, start_cheat_caller_address, stop_cheat_caller_address};
 
