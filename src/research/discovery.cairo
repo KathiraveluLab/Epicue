@@ -32,7 +32,7 @@ pub fn map_research_tags(domain: felt252) -> Array<felt252> {
     } else if domain == 'water' {
         return array!['sustainable_sanitation', 'l1_data', 'ecology'];
     } else {
-        return array!['equisys', 'general_research'];
+        return array!['epicue', 'general_research'];
     }
 }
 

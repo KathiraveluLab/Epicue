@@ -45,7 +45,7 @@ pub fn check_periodic_slcompliance(period: u64, last_audit: u64) -> bool {
 }
 
 /// Advanced Verifiable Audit Pipeline
-/// This adds significant logic depth for EQUISYS Phase 4.
+/// This adds significant logic depth for Epicue Phase 4.
 pub fn validate_audit_pipeline(
     evidence_hash: felt252,
     authority: ContractAddress,

@@ -8,7 +8,7 @@ pub fn calculate_sustainability_score(
     geospatial_impact: u64,
     collaboration_index: u16
 ) -> u64 {
-    // A complex weighted calculation for "Digital Sustainability" (EQUISYS Objective)
+    // A complex weighted calculation for "Digital Sustainability" (Epicue Objective)
     let total_impact = healthcare_impact + water_impact + industry_impact + education_impact + geospatial_impact;
     if total_impact == 0 { return 0; }
 

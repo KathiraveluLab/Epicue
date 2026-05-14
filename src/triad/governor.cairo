@@ -1,5 +1,5 @@
 /// The Governor (Accountability)
-/// Manages system-wide compliance and authority delegation as defined in EQUISYS Triad.
+/// Manages system-wide compliance and authority delegation as defined in Epicue Triad.
 
 use starknet::ContractAddress;
 
@@ -42,10 +42,10 @@ pub fn calculate_fate_score(record_count: u64, auth_count: u64) -> u8 {
 }
 
 pub fn get_compliance_label(score: u8) -> felt252 {
-    if score >= 90 { 'EQUISYS_EXCELLENT' }
-    else if score >= 70 { 'EQUISYS_GOOD' }
-    else if score >= 50 { 'EQUISYS_AVERAGE' }
-    else { 'EQUISYS_REVIEW_REQUIRED' }
+    if score >= 90 { 'EPICUE_EXCELLENT' }
+    else if score >= 70 { 'EPICUE_GOOD' }
+    else if score >= 50 { 'EPICUE_AVERAGE' }
+    else { 'EPICUE_REVIEW_REQUIRED' }
 }
 
 /// ── Governance Voting Logic ──────────────────────────────────────────────────

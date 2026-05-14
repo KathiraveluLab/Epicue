@@ -1,5 +1,5 @@
 /// The Validator (System Integrity)
-/// Enforces business rules and geospatial boundaries as defined in EQUISYS Triad.
+/// Enforces business rules and geospatial boundaries as defined in Epicue Triad.
 
 use epicue_core::core::types::domains;
 
@@ -36,9 +36,9 @@ pub fn check_domain_constraints(domain: felt252, category: felt252, severity: u8
 /// Verifiable Geo-fencing Pattern (Section 9)
 /// Ensures research data originates from STARK-verified sites.
 pub fn check_geospatial_bounds(lat: i32, lon: i32) {
-    // Primary Site: EQUISYS Research Zone Alpha
+    // Primary Site: Epicue Research Zone Alpha
     let is_in_zone_alpha = lat >= 4000 && lat <= 4200 && lon >= -7500 && lon <= -7300;
-    // Secondary Site: EQUISYS Research Zone Beta
+    // Secondary Site: Epicue Research Zone Beta
     let is_in_zone_beta = lat >= 1000 && lat <= 1200 && lon >= 3000 && lon <= 3200;
 
     assert(is_in_zone_alpha || is_in_zone_beta, 'Outside geo-fenced research');

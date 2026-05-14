@@ -1,4 +1,4 @@
-# Starknet Foundry Configuration (EQUISYS Framework)
+# Starknet Foundry Configuration (Epicue Framework)
 # Profiles are selected via --profile. Secrets are sourced from local/public.env.
 
 [sncast.local]

@@ -1,4 +1,4 @@
-/// Normalization constant for EQUISYS Impact Score
+/// Normalization constant for Epicue Impact Score
 pub const KAPPA: u64 = 10;
 
 /// Technical metrics to track "Scientific Productivity" on-chain.

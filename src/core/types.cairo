@@ -1,4 +1,4 @@
-/// Generalized record submitted for EQUISYS use cases.
+/// Generalized record submitted for Epicue use cases.
 #[derive(Drop, Serde, starknet::Store)]
 pub struct EpicueRecord {
     pub subject_id: felt252,

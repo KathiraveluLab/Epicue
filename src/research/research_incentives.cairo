@@ -50,7 +50,7 @@ pub fn verify_milestone_integrity(proof_hash: felt252, verifier_is_authority: bo
     false
 }
 
-/// Research Impact Scoring for EQUISYS
+/// Research Impact Scoring for Epicue
 /// Calculates a score based on scientific consensus and societal impact.
 pub fn calculate_research_score(consensus: u8, societal_impact: u64) -> u64 {
     let base = consensus.into() * 10;

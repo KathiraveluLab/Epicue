@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Epicue Unified Deployment Script (EQUISYS Architecture)
+# Epicue Unified Deployment Script (Epicue Architecture)
 # Supports Local (Devnet) and Public (Sepolia) targets.
 
 set -e

@@ -6,7 +6,7 @@ use starknet::ContractAddress;
 // ──────────────────────────────────────────────
 
     /// ========================================================================
-    /// THE EQUISYS TRIAD (Section 3)
+    /// THE Epicue TRIAD (Section 3)
     /// ========================================================================
     /// The Registry serves as the central hub integrating the three core modules:
     /// 1. The Validator (System Integrity): Enforces domain constraints and geo-fencing.
@@ -24,7 +24,7 @@ use starknet::ContractAddress;
     fn submit_health_record(ref self: TContractState, record: HealthRecord);
     fn get_health_record(self: @TContractState, patient_id: felt252) -> HealthRecord;
 
-    // Phase-3 EQUISYS generalized entry points
+    // Phase-3 Epicue generalized entry points
     fn submit_epicue_record(ref self: TContractState, record: EpicueRecord);
     fn get_epicue_record(self: @TContractState, subject_id: felt252) -> EpicueRecord;
     
@@ -131,7 +131,7 @@ mod Registry {
         records: Map<felt252, felt252>,
         // Phase-2: typed healthcare records (legacy)
         health_records: Map<felt252, HealthRecord>,
-        // Phase-3: generalized EQUISYS records
+        // Phase-3: generalized Epicue records
         epicue_records: Map<felt252, EpicueRecord>,
         // Authority registry
         authorities: Map<ContractAddress, bool>,
@@ -139,7 +139,7 @@ mod Registry {
         // Transparency counters
         record_count: u64,
         record_ids: Map<u64, felt252>,
-        // On-chain aggregations for EQUISYS domains
+        // On-chain aggregations for Epicue domains
         domain_counts: Map<felt252, u64>,
         // Governance Voting Storage
         proposals: Map<u64, epicue_core::triad::governor::Proposal>,

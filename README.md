@@ -9,7 +9,7 @@ Epicue is a Starknet-native framework designed to provide a mathematically verif
 ## Byzantine Fault Tolerance (BFT) & Governance
 Epicue is engineered for the untrusted Internet. Unlike typical centralized registries, Epicue incorporates **Scientific BFT Resilience** ($n=3f+1$):
 - **2f+1 Scientific Quorum**: New methodologies and research protocols require cryptographically-verified endorsements from a $2f+1$ institutional majority.
-- **Decentralized Governance Locks**: All administrative actions (authority management, reputation floors) are strictly locked behind the EQUISYS Governor. Modifications are only executable via successful voting proposals.
+- **Decentralized Governance Locks**: All administrative actions (authority management, reputation floors) are strictly locked behind the Epicue Governor. Modifications are only executable via successful voting proposals.
 - **Graded Byzantine Slashing**: Institutional penalties are categorized by severity (Minor, Major, Critical). Critical faults result in architectural revocation of authority.
 - **Security Bounties**: A built-in **Bounty Credit** system incentivizes specialized auditors to detect and flag Byzantine faults.
 
@@ -19,7 +19,7 @@ The codebase is structured into logical layers to facilitate inter-institutional
 ```text
 ├── src/# Cairo Core Implementation
 │   ├── core/           # Fundamental Logic (Access, Metadata, Types)
-│   ├── triad/          # The EQUISYS Triad (Validator, Auditor, Governor)
+│   ├── triad/          # The Epicue Triad (Validator, Auditor, Governor)
 │   ├── research/       # Scientific Productivity (BFT Peer Review, Methodology)
 │   ├── social/         # Equity & Inclusion (DRI, Reputation, Bounty)
 │   └── metrics/        # High-Level Analytics (Sustainability Ledger)
@@ -86,7 +86,7 @@ Epicue supports a unified deployment architecture for both local and public targ
    ```
 
 ## Security & Byzantine Resilience
-The framework enforces a rigorous $n=3f+1$ Byzantine Fault Tolerance model. Security audits are performed on-chain by the EQUISYS Triad, and proven malicious behavior results in institutional slashing.
+The framework enforces a rigorous $n=3f+1$ Byzantine Fault Tolerance model. Security audits are performed on-chain by the Epicue Triad, and proven malicious behavior results in institutional slashing.
 
 ---
 *Strengthening citizens' trust through objective cryptographic guarantees.*

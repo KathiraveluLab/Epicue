@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Epicue Starknet Sepolia Deployment Script
-# Professional automation for EQUISYS framework deployment.
+# Professional automation for Epicue framework deployment.
 
 set -e
 

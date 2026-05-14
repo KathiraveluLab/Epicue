@@ -382,7 +382,7 @@ function RegistrySection() {
   const recordCount = countRaw ? Number(countRaw) : 0;
   const authCount = authCountRaw ? Number(authCountRaw) : 1;
   const score = scoreRaw ? Number(scoreRaw) : 0;
-  const label = labelRaw ? decodeShortString(labelRaw.toString()).replace('EQUISYS_', '') : 'LOADING';
+  const label = labelRaw ? decodeShortString(labelRaw.toString()).replace('EPICUE_', '') : 'LOADING';
   const f = Math.floor((authCount - 1) / 3);
   const quorum = 2 * f + 1;
 

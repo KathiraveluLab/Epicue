@@ -123,7 +123,7 @@ pub fn check_researcher_promotion(successful_reviews: u64, impact_contributed: u
 }
 
 /// Calculate Research Impact Weight
-/// This function adds recursive-like scoring depth for EQUISYS compliance.
+/// This function adds recursive-like scoring depth for Epicue compliance.
 pub fn calculate_research_impact_weight(reputation: u64, domain: felt252) -> u32 {
     let mut weight = 10_u32;
     if reputation > 1000 { weight += 50; }

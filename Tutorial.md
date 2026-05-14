@@ -4,7 +4,7 @@ This guide provides a walkthrough of the **Epicue BFT Registry** features once y
 
 ---
 
-## 1. The EQUISYS Core Concept
+## 1. The Epicue Core Concept
 
 Epicue is not just a database; it is a **verifiable institutional agreement engine**. It operates on the principle that in an untrusted internet environment, single-node truth is weak. We rely on **Scientific BFT Resilience** ($n=3f+1$).
 

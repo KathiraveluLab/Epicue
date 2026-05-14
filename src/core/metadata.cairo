@@ -52,7 +52,7 @@ pub fn get_long_domain_desc(domain: felt252) -> felt252 {
     } else if domain == domains::GEOSPATIAL {
         'STARK-based spatial proofs'
     } else {
-        'EQUISYS framework research'
+        'Epicue framework research'
     }
 }
 

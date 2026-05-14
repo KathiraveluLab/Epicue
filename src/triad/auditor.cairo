@@ -1,5 +1,5 @@
 /// The Auditor (Transparency)
-/// Performs post-computation analysis and anomaly detection as defined in EQUISYS Triad.
+/// Performs post-computation analysis and anomaly detection as defined in Epicue Triad.
 
 use epicue_core::core::types::EpicueRecord;
 
