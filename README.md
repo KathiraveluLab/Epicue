@@ -71,7 +71,7 @@ See the [Tutorial Guide](Tutorial.md) for a step-by-step walkthrough of institut
 
 ### Deployment
 
-Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Guide](Deployment.md) for detailed instructions.
+Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Architecture](docs/Deployment.md) for a detailed graphical overview and instructions.
 
 1. **Configure Environment**: Choose your target.
    ```bash
