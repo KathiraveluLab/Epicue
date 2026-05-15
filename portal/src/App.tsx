@@ -379,12 +379,26 @@ function RegistrySection() {
     args: [],
   });
 
+  const { address } = useAccount();
+  const { data: repRaw } = useReadContract({
+    abi: CONTRACT_ABI,
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    functionName: 'get_institution_reputation',
+    args: [address || '0x0'],
+  });
+
   const recordCount = countRaw ? Number(countRaw) : 0;
   const authCount = authCountRaw ? Number(authCountRaw) : 1;
   const score = scoreRaw ? Number(scoreRaw) : 0;
   const label = labelRaw ? decodeShortString(labelRaw.toString()).replace('EPICUE_', '') : 'LOADING';
   const f = Math.floor((authCount - 1) / 3);
   const quorum = 2 * f + 1;
+  
+  const reputation = repRaw as any;
+  const cumulativeTrust = reputation ? (reputation.cumulative_trust ? Number(reputation.cumulative_trust) : 0) : 0;
+  // Format trust for display (e.g., in "k" units if large)
+  const trustDisplay = cumulativeTrust > 1000000 ? `${(cumulativeTrust / 1000000).toFixed(1)}M` : 
+                       cumulativeTrust > 1000 ? `${(cumulativeTrust / 1000).toFixed(1)}k` : cumulativeTrust;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -411,6 +425,35 @@ function RegistrySection() {
           <p className="text-slate-500 text-sm font-medium mb-2">BFT Quorum Status (2f + 1)</p>
           <h3 className="text-4xl font-bold text-violet-600">{quorum}/{authCount}</h3>
           <p className="text-slate-600 text-[10px] mt-4 uppercase tracking-widest font-bold">Consensus Hardened</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="p-8 rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 text-white relative overflow-hidden shadow-xl shadow-indigo-200">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <ShieldCheck className="w-24 h-24" />
+          </div>
+          <p className="text-indigo-100 text-sm font-medium mb-2 uppercase tracking-widest">Cumulative Trust Integral</p>
+          <h3 className="text-5xl font-bold mb-4">{trustDisplay}</h3>
+          <p className="text-indigo-100/70 text-[10px] leading-relaxed max-w-xs">
+            A time-integral of dynamic institutional trust based on verifiable 
+            SDG metrics, research accuracy, and network participation.
+          </p>
+        </div>
+
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 flex flex-col justify-center shadow-sm">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
+                    <Activity className="w-6 h-6" />
+                </div>
+                <div>
+                    <h4 className="font-bold text-slate-900">Dynamic Multiplier</h4>
+                    <p className="text-xs text-slate-500 font-medium">Current Factor: x{reputation ? Number(reputation.trust_multiplier) : 1}</p>
+                </div>
+            </div>
+            <div className="mt-6 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(reputation ? Number(reputation.trust_multiplier) : 1) * 10}%` }} />
+            </div>
         </div>
       </div>
 

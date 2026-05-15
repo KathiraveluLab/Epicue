@@ -7,6 +7,32 @@ pub struct InstitutionReputation {
     pub last_activity_timestamp: u64,
     pub trust_multiplier: u8, // Higher multiplier for longer-term accurate data
     pub bounty_credits: u64, // Rewards for byzantine fault detection
+    pub cumulative_trust: u128, // The time integral of dynamic trust
+}
+
+/// Dynamic Trust Level (T(t))
+/// Based on varying metrics: reputation, sustainability (green stature), and security contributions.
+pub fn calculate_dynamic_trust_level(rep: @InstitutionReputation, green_stature: u64) -> u64 {
+    let base_trust = (*rep.reputation_credits) + green_stature + (*rep.bounty_credits);
+    base_trust * (*rep.trust_multiplier).into()
+}
+
+/// Update Institutional Trust as a Time Integral
+/// S = ∫ T(t) dt ≈ Σ T_i * Δt_i
+pub fn update_cumulative_trust(ref rep: InstitutionReputation, green_stature: u64, current_timestamp: u64) {
+    if rep.last_activity_timestamp == 0 {
+        rep.last_activity_timestamp = current_timestamp;
+        return;
+    }
+    
+    if current_timestamp <= rep.last_activity_timestamp { return; }
+    
+    let elapsed = current_timestamp - rep.last_activity_timestamp;
+    
+    // We use the trust level *before* the current update for the preceding interval
+    let trust_level = calculate_dynamic_trust_level(@rep, green_stature);
+    
+    rep.cumulative_trust += trust_level.into() * elapsed.into();
 }
 
 pub fn calculate_credit_gain(severity: u8, domain: felt252) -> u64 {

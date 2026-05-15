@@ -105,7 +105,7 @@ mod Registry {
     use super::{EpicueRecord, HealthRecord, domains};
     use epicue_core::core::access::assert_is_authority;
     use epicue_core::social::advocate::{Advocate};
-    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing, apply_reputation_decay};
+    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing, apply_reputation_decay, update_cumulative_trust, calculate_dynamic_trust_level};
     use epicue_core::core::types::{GeologicalRecord};
     use epicue_core::triad::validator::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
     use epicue_core::triad::auditor::{detect_byzantine_fault_severity, fault_severity};
@@ -323,16 +323,21 @@ mod Registry {
             let total_sev = self.domain_total_severity.read(domain);
             self.domain_total_severity.write(domain, total_sev + record.severity.into());
 
-            // Update Institutional Reputation with Decay
+            // Update Institutional Reputation with Decay and Trust Integral
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
+            let green_stature = self.institutional_green_stature.read(caller);
+            let now = get_block_timestamp();
             
-            // 1. Apply decay since last activity (respecting floor)
-            apply_reputation_decay(ref rep, get_block_timestamp(), self.reputation_floor.read());
+            // 1. Update time-integral of trust BEFORE changing the state
+            update_cumulative_trust(ref rep, green_stature, now);
+
+            // 2. Apply decay since last activity (respecting floor)
+            apply_reputation_decay(ref rep, now, self.reputation_floor.read());
             
-            // 2. Add new credits
+            // 3. Add new credits
             rep.reputation_credits += calculate_credit_gain(record.severity, domain);
-            rep.last_activity_timestamp = record.timestamp;
+            rep.last_activity_timestamp = now;
             self.reputations.write(caller, rep);
 
             self.epicue_records.write(subject_id, record);
@@ -597,8 +602,13 @@ mod Registry {
             report.institution = caller;
             report.report_index = count;
             
-            // Update Green Stature
+            // Update Reputation and Trust Integral
+            let mut rep = self.reputations.read(caller);
             let current_stature = self.institutional_green_stature.read(caller);
+            let now = get_block_timestamp();
+
+            update_cumulative_trust(ref rep, current_stature, now);
+            
             let gain = calculate_green_stature_gain(report.carbon_metric, report.energy_efficiency, report.waste_reduction);
             let new_stature = current_stature + gain;
             
@@ -606,9 +616,8 @@ mod Registry {
             self.institution_report_counts.write(caller, count);
             self.institutional_green_stature.write(caller, new_stature);
             
-            // Update Reputation
-            let mut rep = self.reputations.read(caller);
             rep.reputation_credits += (gain / 10); // Reputation weighted by green gain
+            rep.last_activity_timestamp = now;
             self.reputations.write(caller, rep);
         }
 
@@ -619,7 +628,12 @@ mod Registry {
         fn claim_security_bounty(ref self: ContractState, byzantine_node: ContractAddress) {
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
+            let now = get_block_timestamp();
+            let green_stature = self.institutional_green_stature.read(caller);
             
+            // Update Trust Integral
+            update_cumulative_trust(ref rep, green_stature, now);
+
             // Detect Byzantine Fault Pattern and Severity
             // Simulation: 40% deviation detected in 10 reviews -> MINOR
             let severity = detect_byzantine_fault_severity(40, 10); 
@@ -630,6 +644,7 @@ mod Registry {
 
             let reward = calculate_bounty_reward(severity, 1000); // Reward scales with severity level trait
             rep.bounty_credits += reward;
+            rep.last_activity_timestamp = now;
             self.reputations.write(caller, rep);
         }
 
@@ -741,13 +756,17 @@ mod Registry {
             let d_count = self.domain_counts.read(domains::GEOSPATIAL);
             self.domain_counts.write(domains::GEOSPATIAL, d_count + 1);
             
-            // Institutional Reputation with Decay
+            // Institutional Reputation with Decay and Trust Integral
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
+            let green_stature = self.institutional_green_stature.read(caller);
+            let now = get_block_timestamp();
             
-            apply_reputation_decay(ref rep, get_block_timestamp(), self.reputation_floor.read());
+            update_cumulative_trust(ref rep, green_stature, now);
+            apply_reputation_decay(ref rep, now, self.reputation_floor.read());
+            
             rep.reputation_credits += 15; // Natural science bonus
-            rep.last_activity_timestamp = timestamp;
+            rep.last_activity_timestamp = now;
             self.reputations.write(caller, rep);
         }
 
@@ -757,8 +776,14 @@ mod Registry {
 
         fn get_institution_reputation(self: @ContractState, address: ContractAddress) -> InstitutionReputation {
             let mut rep = self.reputations.read(address);
-            // Apply on-the-fly decay for accurate viewing
-            apply_reputation_decay(ref rep, get_block_timestamp(), self.reputation_floor.read());
+            let green_stature = self.institutional_green_stature.read(address);
+            let now = get_block_timestamp();
+            
+            // 1. Calculate time-integral since last update on-the-fly
+            update_cumulative_trust(ref rep, green_stature, now);
+            
+            // 2. Apply on-the-fly decay for accurate viewing
+            apply_reputation_decay(ref rep, now, self.reputation_floor.read());
             rep
         }
 
