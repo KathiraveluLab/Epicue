@@ -608,6 +608,7 @@ mod Registry {
             let now = get_block_timestamp();
 
             update_spatiotemporal_trust(ref rep, current_stature, now);
+            apply_reputation_decay(ref rep, now, self.reputation_floor.read());
             
             let gain = calculate_green_stature_gain(report.carbon_metric, report.energy_efficiency, report.waste_reduction);
             let new_stature = current_stature + gain;
@@ -633,6 +634,7 @@ mod Registry {
             
             // Update Trust Integral
             update_spatiotemporal_trust(ref rep, green_stature, now);
+            apply_reputation_decay(ref rep, now, self.reputation_floor.read());
 
             // Detect Byzantine Fault Pattern and Severity
             // Simulation: 40% deviation detected in 10 reviews -> MINOR
