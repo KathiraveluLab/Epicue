@@ -105,7 +105,7 @@ mod Registry {
     use super::{EpicueRecord, HealthRecord, domains};
     use epicue_core::core::access::assert_is_authority;
     use epicue_core::social::advocate::{Advocate};
-    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing, apply_reputation_decay, update_cumulative_trust, calculate_dynamic_trust_level};
+    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing, apply_reputation_decay, update_spatiotemporal_trust, calculate_dynamic_trust_level};
     use epicue_core::core::types::{GeologicalRecord};
     use epicue_core::triad::validator::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
     use epicue_core::triad::auditor::{detect_byzantine_fault_severity, fault_severity};
@@ -330,7 +330,7 @@ mod Registry {
             let now = get_block_timestamp();
             
             // 1. Update time-integral of trust BEFORE changing the state
-            update_cumulative_trust(ref rep, green_stature, now);
+            update_spatiotemporal_trust(ref rep, green_stature, now);
 
             // 2. Apply decay since last activity (respecting floor)
             apply_reputation_decay(ref rep, now, self.reputation_floor.read());
@@ -607,7 +607,7 @@ mod Registry {
             let current_stature = self.institutional_green_stature.read(caller);
             let now = get_block_timestamp();
 
-            update_cumulative_trust(ref rep, current_stature, now);
+            update_spatiotemporal_trust(ref rep, current_stature, now);
             
             let gain = calculate_green_stature_gain(report.carbon_metric, report.energy_efficiency, report.waste_reduction);
             let new_stature = current_stature + gain;
@@ -632,7 +632,7 @@ mod Registry {
             let green_stature = self.institutional_green_stature.read(caller);
             
             // Update Trust Integral
-            update_cumulative_trust(ref rep, green_stature, now);
+            update_spatiotemporal_trust(ref rep, green_stature, now);
 
             // Detect Byzantine Fault Pattern and Severity
             // Simulation: 40% deviation detected in 10 reviews -> MINOR
@@ -762,7 +762,7 @@ mod Registry {
             let green_stature = self.institutional_green_stature.read(caller);
             let now = get_block_timestamp();
             
-            update_cumulative_trust(ref rep, green_stature, now);
+            update_spatiotemporal_trust(ref rep, green_stature, now);
             apply_reputation_decay(ref rep, now, self.reputation_floor.read());
             
             rep.reputation_credits += 15; // Natural science bonus
@@ -780,7 +780,7 @@ mod Registry {
             let now = get_block_timestamp();
             
             // 1. Calculate time-integral since last update on-the-fly
-            update_cumulative_trust(ref rep, green_stature, now);
+            update_spatiotemporal_trust(ref rep, green_stature, now);
             
             // 2. Apply on-the-fly decay for accurate viewing
             apply_reputation_decay(ref rep, now, self.reputation_floor.read());

@@ -395,10 +395,10 @@ function RegistrySection() {
   const quorum = 2 * f + 1;
   
   const reputation = repRaw as any;
-  const cumulativeTrust = reputation ? (reputation.cumulative_trust ? Number(reputation.cumulative_trust) : 0) : 0;
+  const spatiotemporalTrust = reputation ? (reputation.spatiotemporal_trust ? Number(reputation.spatiotemporal_trust) : 0) : 0;
   // Format trust for display (e.g., in "k" units if large)
-  const trustDisplay = cumulativeTrust > 1000000 ? `${(cumulativeTrust / 1000000).toFixed(1)}M` : 
-                       cumulativeTrust > 1000 ? `${(cumulativeTrust / 1000).toFixed(1)}k` : cumulativeTrust;
+  const trustDisplay = spatiotemporalTrust > 1000000 ? `${(spatiotemporalTrust / 1000000).toFixed(1)}M` : 
+                       spatiotemporalTrust > 1000 ? `${(spatiotemporalTrust / 1000).toFixed(1)}k` : spatiotemporalTrust;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
