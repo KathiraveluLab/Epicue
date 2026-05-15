@@ -639,12 +639,19 @@ mod Registry {
             // Detect Byzantine Fault Pattern and Severity
             // Simulation: 40% deviation detected in 10 reviews -> MINOR
             let severity = detect_byzantine_fault_severity(40, 10); 
-            assert(severity != fault_severity::NONE, 'No byzantine fault detected');
+            
+            if severity == fault_severity::NONE {
+                // PENALTY: Slash the reporter for false auditing (Audit Spamming)
+                apply_graded_slashing(ref rep, 1); // Apply a Minor slash to reporter
+                rep.last_activity_timestamp = now;
+                self.reputations.write(caller, rep);
+                return;
+            }
             
             // GRADED ACTION: Slash based on severity
             self._slash_byzantine_node(byzantine_node, severity);
 
-            let reward = calculate_bounty_reward(severity, 1000); // Reward scales with severity level trait
+            let reward = calculate_bounty_reward(severity, 1000); 
             rep.bounty_credits += reward;
             rep.last_activity_timestamp = now;
             self.reputations.write(caller, rep);
