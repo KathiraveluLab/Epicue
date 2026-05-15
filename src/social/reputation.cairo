@@ -8,6 +8,7 @@ pub struct InstitutionReputation {
     pub trust_multiplier: u8, // Scaling factor for long-term integrity
     pub bounty_credits: u64, // Security contributions
     pub spatiotemporal_trust: u128, // Double Integral: ∫ ∫ τ(p, t) dp dt
+    pub is_byzantine: bool, // Flagged via Trust Gradient Divergence (∇S < -Ω)
 }
 
 /// Dynamic Trust Level (T(t) = ∫ τ(p, t) dp)
@@ -56,15 +57,26 @@ pub fn apply_graded_slashing(ref reputation: InstitutionReputation, severity: u8
     if severity == 3 { // CRITICAL
         reputation.reputation_credits = 0;
         reputation.trust_multiplier = 1;
+        reputation.is_byzantine = true; // Complete Divergence
     } else if severity == 2 { // MAJOR
         reputation.reputation_credits = (reputation.reputation_credits * 50) / 100;
         reputation.trust_multiplier = 1;
+        reputation.is_byzantine = true; // Divergence detected
     } else if severity == 1 { // MINOR
         reputation.reputation_credits = (reputation.reputation_credits * 75) / 100;
         if reputation.trust_multiplier > 1 {
             reputation.trust_multiplier -= 1;
         }
     }
+}
+
+/// Detects if a node is transitioning into a Byzantine state through rapid trust erosion.
+/// Corresponds to ∇S < -Ω in the formal model.
+pub fn detect_trust_divergence(old_density: u64, new_density: u64, threshold: u64) -> bool {
+    if old_density > new_density {
+        return (old_density - new_density) > threshold;
+    }
+    false
 }
 
 pub mod reputation_tiers {

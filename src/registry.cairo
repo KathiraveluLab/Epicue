@@ -328,6 +328,7 @@ mod Registry {
             // Update Institutional Reputation with Decay and Trust Integral
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
+            assert(!rep.is_byzantine, 'Institution is byzantine');
             let green_stature = self.institutional_green_stature.read(caller);
             let now = get_block_timestamp();
             
@@ -633,6 +634,7 @@ mod Registry {
             
             // Update Reputation and Trust Integral
             let mut rep = self.reputations.read(caller);
+            assert(!rep.is_byzantine, 'Institution is byzantine');
             let current_stature = self.institutional_green_stature.read(caller);
             let now = get_block_timestamp();
 
@@ -658,6 +660,7 @@ mod Registry {
         fn claim_security_bounty(ref self: ContractState, byzantine_node: ContractAddress) {
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
+            assert(!rep.is_byzantine, 'Institution is byzantine');
             let now = get_block_timestamp();
             let green_stature = self.institutional_green_stature.read(caller);
             
@@ -797,6 +800,7 @@ mod Registry {
             // Institutional Reputation with Decay and Trust Integral
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
+            assert(!rep.is_byzantine, 'Institution is byzantine');
             let green_stature = self.institutional_green_stature.read(caller);
             let now = get_block_timestamp();
             
@@ -845,6 +849,14 @@ mod Registry {
             if !self.authorities.read(new_authority) {
                 self.authorities.write(new_authority, true);
                 self.authority_count.write(self.authority_count.read() + 1);
+                
+                // Initialize reputation if not exists
+                let mut rep = self.reputations.read(new_authority);
+                if rep.trust_multiplier == 0 {
+                    rep.trust_multiplier = 1;
+                    rep.institution = new_authority;
+                    self.reputations.write(new_authority, rep);
+                }
             }
         }
 
