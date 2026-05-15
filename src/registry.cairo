@@ -414,6 +414,9 @@ mod Registry {
             let caller = get_caller_address();
             assert_is_authority(self.authorities.read(caller));
             
+            let mut rep = self.reputations.read(caller);
+            assert(!rep.is_byzantine, 'Institution is byzantine');
+            
             let mut proposal = self.proposals.read(proposal_id);
             assert(proposal.status == proposal_status::PENDING, 'Proposal not active');
             assert(!self.votes.read((proposal_id, caller)), 'Already voted');
