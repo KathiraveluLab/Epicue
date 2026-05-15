@@ -148,6 +148,8 @@ mod Registry {
         // Digital Inclusion Storage
         advocates: Map<ContractAddress, Advocate>,
         advocate_count: u64,
+        // BFT Weighted Governance
+        authority_weights: Map<ContractAddress, u16>,
         // Research Stats Storage
         domain_total_severity: Map<felt252, u64>,
         // Natural Sciences Storage
@@ -415,10 +417,16 @@ mod Registry {
             assert(proposal.status == proposal_status::PENDING, 'Proposal not active');
             assert(!self.votes.read((proposal_id, caller)), 'Already voted');
             
+            // Apply Weighted Voting (default weight is 100 if not set)
+            let mut weight = self.authority_weights.read(caller);
+            if weight == 0 { weight = 100; }
+            
+            let vote_contribution = epicue_core::triad::governor::calculate_weighted_vote(100, weight);
+
             if support {
-                proposal.votes_for += 1;
+                proposal.votes_for += vote_contribution;
             } else {
-                proposal.votes_against += 1;
+                proposal.votes_against += vote_contribution;
             }
             
             self.votes.write((proposal_id, caller), true);
@@ -428,7 +436,28 @@ mod Registry {
 
         fn finalize_voting(ref self: ContractState, proposal_id: u64) {
             let mut proposal = self.proposals.read(proposal_id);
-            if epicue_core::triad::governor::is_finalizable(@proposal, self.authority_count.read()) {
+            let n = self.authority_count.read();
+            
+            // Standard Quorum: 50% + 1
+            let mut threshold = epicue_core::triad::governor::get_quorum_threshold(n);
+            
+            // Hardened Quorum for critical actions (REMOVE_AUTH): 2/3 majority
+            if proposal.action_type == epicue_core::triad::governor::actions::REMOVE_AUTHORITY {
+                threshold = epicue_core::triad::governor::calculate_emergency_quorum(n.try_into().unwrap()).into();
+            }
+
+            let total_votes = proposal.votes_for + proposal.votes_against;
+            
+            // Note: In weighted voting, we compare total weighted votes to a threshold 
+            // of (n * 100 / 2) + 1. 
+            let total_potential_weight = n * 100; 
+            let weighted_threshold = if proposal.action_type == epicue_core::triad::governor::actions::REMOVE_AUTHORITY {
+                (total_potential_weight * 2) / 3
+            } else {
+                (total_potential_weight / 2) + 1
+            };
+
+            if total_votes >= weighted_threshold {
                 if proposal.votes_for > proposal.votes_against {
                     proposal.status = proposal_status::APPROVED;
                 } else {
