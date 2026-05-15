@@ -1,4 +1,8 @@
-use epicue_core::core::types::{EpicueRecord, HealthRecord, domains};
+use epicue_core::social::reputation::{
+    InstitutionReputation, update_spatiotemporal_trust, calculate_credit_gain,
+    calculate_bounty_reward, apply_reputation_decay, apply_graded_slashing,
+    detect_trust_divergence, NodeStatus
+};
 use starknet::ContractAddress;
 
 // ──────────────────────────────────────────────
@@ -328,10 +332,13 @@ mod Registry {
             // Update Institutional Reputation with Decay and Trust Integral
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
-            assert(!rep.is_byzantine, 'Institution is byzantine');
+            assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
             let green_stature = self.institutional_green_stature.read(caller);
             let now = get_block_timestamp();
             
+            // Capture old density for divergence check
+            let old_density = epicue_core::social::reputation::calculate_dynamic_trust_level(@rep, green_stature);
+
             // 1. Update time-integral of trust BEFORE changing the state
             update_spatiotemporal_trust(ref rep, green_stature, now);
 
@@ -341,6 +348,16 @@ mod Registry {
             // 3. Add new credits
             rep.reputation_credits += calculate_credit_gain(record.severity, domain);
             rep.last_activity_timestamp = now;
+
+            // 4. Dynamic Divergence Check
+            let new_density = epicue_core::social::reputation::calculate_dynamic_trust_level(@rep, green_stature);
+            let new_status = detect_trust_divergence(old_density, new_density, 50);
+            if new_status == NodeStatus::Byzantine {
+                rep.status = NodeStatus::Byzantine;
+            } else if new_status == NodeStatus::Failing {
+                rep.status = NodeStatus::Failing;
+            }
+
             self.reputations.write(caller, rep);
 
             self.epicue_records.write(subject_id, record);
@@ -415,7 +432,7 @@ mod Registry {
             assert_is_authority(self.authorities.read(caller));
             
             let mut rep = self.reputations.read(caller);
-            assert(!rep.is_byzantine, 'Institution is byzantine');
+            assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
             
             let mut proposal = self.proposals.read(proposal_id);
             assert(proposal.status == proposal_status::PENDING, 'Proposal not active');
@@ -637,7 +654,7 @@ mod Registry {
             
             // Update Reputation and Trust Integral
             let mut rep = self.reputations.read(caller);
-            assert(!rep.is_byzantine, 'Institution is byzantine');
+            assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
             let current_stature = self.institutional_green_stature.read(caller);
             let now = get_block_timestamp();
 
@@ -663,7 +680,7 @@ mod Registry {
         fn claim_security_bounty(ref self: ContractState, byzantine_node: ContractAddress) {
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
-            assert(!rep.is_byzantine, 'Institution is byzantine');
+            assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
             let now = get_block_timestamp();
             let green_stature = self.institutional_green_stature.read(caller);
             
@@ -803,7 +820,7 @@ mod Registry {
             // Institutional Reputation with Decay and Trust Integral
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
-            assert(!rep.is_byzantine, 'Institution is byzantine');
+            assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
             let green_stature = self.institutional_green_stature.read(caller);
             let now = get_block_timestamp();
             
@@ -858,6 +875,7 @@ mod Registry {
                 if rep.trust_multiplier == 0 {
                     rep.trust_multiplier = 1;
                     rep.institution = new_authority;
+                    rep.status = NodeStatus::Compliant;
                     self.reputations.write(new_authority, rep);
                 }
             }
