@@ -101,7 +101,6 @@ def generate_gas_bar_plot(gas_data):
     # Format y-axis simply
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, loc: f"{y:g}"))
     ax.set_ylabel("Starknet L2 Gas Units (Millions)", fontsize=18, labelpad=10, color='#2d3748')
-    ax.set_title("Verifiable Computational Overhead", fontsize=20, pad=20, color='#1a202c')
     
     # Set y limit to give space
     ax.set_ylim(0, max(values) * 1.1)
@@ -170,7 +169,6 @@ def generate_reputation_plot(gas_data):
     ax.set_axisbelow(True)
     
     ax.set_ylabel("Reputation Credits ($R_c$)", fontsize=18, labelpad=10, color='#2d3748')
-    ax.set_title("Byzantine-Resilient Reputation Dynamics", fontsize=20, pad=20, color='#1a202c')
     ax.set_ylim(0, 60)
     
     for bar in bars:
