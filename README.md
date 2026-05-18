@@ -69,6 +69,9 @@ The portal will be available at `http://localhost:3001`.
 ### Detailed Walkthrough
 See the [Tutorial Guide](Tutorial.md) for a step-by-step walkthrough of institutional features.
 
+### Verifiable Use Cases
+See the [Verifiable Use Cases Guide](UseCases.md) for a detailed technical description of the domain-specific data structures and FATE alignment matrices.
+
 ### Deployment
 
 Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Architecture](docs/README.md) for a detailed graphical overview and instructions.

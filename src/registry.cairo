@@ -3,7 +3,7 @@ use epicue_core::social::reputation::{
     calculate_bounty_reward, apply_reputation_decay, apply_graded_slashing,
     detect_trust_divergence, NodeStatus
 };
-use epicue_core::core::types::{EpicueRecord, HealthRecord, domains};
+use epicue_core::core::types::{EpicueRecord, HealthRecord, domains, WaterRecord, IndustrialRecord, EducationRecord};
 use starknet::ContractAddress;
 
 // ──────────────────────────────────────────────
@@ -58,6 +58,18 @@ use starknet::ContractAddress;
     fn submit_geological_record(ref self: TContractState, record: epicue_core::core::types::GeologicalRecord);
     fn get_geological_record(self: @TContractState, subject_id: felt252) -> epicue_core::core::types::GeologicalRecord;
 
+    // Water Quality
+    fn submit_water_record(ref self: TContractState, record: epicue_core::core::types::WaterRecord);
+    fn get_water_record(self: @TContractState, subject_id: felt252) -> epicue_core::core::types::WaterRecord;
+
+    // Industrial Traceability
+    fn submit_industrial_record(ref self: TContractState, record: epicue_core::core::types::IndustrialRecord);
+    fn get_industrial_record(self: @TContractState, subject_id: felt252) -> epicue_core::core::types::IndustrialRecord;
+
+    // Higher Education
+    fn submit_education_record(ref self: TContractState, record: epicue_core::core::types::EducationRecord);
+    fn get_education_record(self: @TContractState, subject_id: felt252) -> epicue_core::core::types::EducationRecord;
+
     // Institutional Incentives
     fn get_institution_reputation(self: @TContractState, address: ContractAddress) -> epicue_core::social::reputation::InstitutionReputation;
 
@@ -107,7 +119,7 @@ use starknet::ContractAddress;
 
 #[starknet::contract]
 mod Registry {
-    use super::{EpicueRecord, HealthRecord, domains};
+    use super::{EpicueRecord, HealthRecord, domains, WaterRecord, IndustrialRecord, EducationRecord};
     use epicue_core::core::access::assert_is_authority;
     use epicue_core::social::advocate::{Advocate};
     use epicue_core::social::reputation::{
@@ -163,6 +175,12 @@ mod Registry {
         domain_total_severity: Map<felt252, u64>,
         // Natural Sciences Storage
         geological_records: Map<felt252, GeologicalRecord>,
+        // Water Quality Storage
+        water_records: Map<felt252, WaterRecord>,
+        // Industrial Traceability Storage
+        industrial_records: Map<felt252, IndustrialRecord>,
+        // Higher Education Storage
+        education_records: Map<felt252, EducationRecord>,
         // Institutional Reputation Storage
         reputations: Map<ContractAddress, InstitutionReputation>,
         // Peer Review Storage
@@ -851,6 +869,141 @@ mod Registry {
 
         fn get_geological_record(self: @ContractState, subject_id: felt252) -> GeologicalRecord {
             self.geological_records.read(subject_id)
+        }
+
+        fn submit_water_record(ref self: ContractState, record: WaterRecord) {
+            assert_is_authority(self.authorities.read(get_caller_address()));
+            
+            // Validate pH bounds (ph_level is scaled by 100, e.g. 14.0 = 1400)
+            assert(record.ph_level <= 1400_u16, 'Invalid pH range');
+            
+            let subject_id = record.subject_id;
+            let timestamp = record.timestamp;
+            
+            self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
+                subject_id,
+                domain: domains::WATER,
+                category: 'water_potability',
+                severity: if record.leak_detected { 4_u8 } else { 1_u8 },
+                timestamp,
+                data_hash: 'STARK_VERIFIED_WATER_HASH',
+            }));
+            
+            self.water_records.write(subject_id, record);
+            
+            let count = self.record_count.read() + 1;
+            self.record_ids.write(count, subject_id);
+            self.record_count.write(count);
+            
+            let d_count = self.domain_counts.read(domains::WATER);
+            self.domain_counts.write(domains::WATER, d_count + 1);
+            
+            let caller = get_caller_address();
+            let mut rep = self.reputations.read(caller);
+            assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
+            let green_stature = self.institutional_green_stature.read(caller);
+            let now = get_block_timestamp();
+            
+            update_spatiotemporal_trust(ref rep, green_stature, now);
+            apply_reputation_decay(ref rep, now, self.reputation_floor.read());
+            
+            rep.reputation_credits += 10;
+            rep.last_activity_timestamp = now;
+            self.reputations.write(caller, rep);
+        }
+
+        fn get_water_record(self: @ContractState, subject_id: felt252) -> WaterRecord {
+            self.water_records.read(subject_id)
+        }
+
+        fn submit_industrial_record(ref self: ContractState, record: IndustrialRecord) {
+            assert_is_authority(self.authorities.read(get_caller_address()));
+            
+            // Validate carbon emission constraints
+            assert(record.carbon_emissions_tons < 1000000_u64, 'Exceeded carbon emission limit');
+            
+            let subject_id = record.subject_id;
+            let timestamp = record.timestamp;
+            
+            self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
+                subject_id,
+                domain: domains::INDUSTRY,
+                category: 'industrial_carbon_audit',
+                severity: if record.audit_passed { 1_u8 } else { 5_u8 },
+                timestamp,
+                data_hash: 'STARK_VERIFIED_INDUSTRY_HASH',
+            }));
+            
+            self.industrial_records.write(subject_id, record);
+            
+            let count = self.record_count.read() + 1;
+            self.record_ids.write(count, subject_id);
+            self.record_count.write(count);
+            
+            let d_count = self.domain_counts.read(domains::INDUSTRY);
+            self.domain_counts.write(domains::INDUSTRY, d_count + 1);
+            
+            let caller = get_caller_address();
+            let mut rep = self.reputations.read(caller);
+            assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
+            let green_stature = self.institutional_green_stature.read(caller);
+            let now = get_block_timestamp();
+            
+            update_spatiotemporal_trust(ref rep, green_stature, now);
+            apply_reputation_decay(ref rep, now, self.reputation_floor.read());
+            
+            rep.reputation_credits += 12;
+            rep.last_activity_timestamp = now;
+            self.reputations.write(caller, rep);
+        }
+
+        fn get_industrial_record(self: @ContractState, subject_id: felt252) -> IndustrialRecord {
+            self.industrial_records.read(subject_id)
+        }
+
+        fn submit_education_record(ref self: ContractState, record: EducationRecord) {
+            assert_is_authority(self.authorities.read(get_caller_address()));
+            
+            // Validate integrity and inclusion scores within [0, 100] FATE bounds
+            assert(record.integrity_index <= 100_u8 && record.inclusion_score <= 100_u8, 'FATE indices out of bounds');
+            
+            let subject_id = record.subject_id;
+            let timestamp = record.timestamp;
+            
+            self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
+                subject_id,
+                domain: domains::EDUCATION,
+                category: 'higher_education_fate',
+                severity: 2_u8,
+                timestamp,
+                data_hash: 'STARK_VERIFIED_EDUCATION_HASH',
+            }));
+            
+            self.education_records.write(subject_id, record);
+            
+            let count = self.record_count.read() + 1;
+            self.record_ids.write(count, subject_id);
+            self.record_count.write(count);
+            
+            let d_count = self.domain_counts.read(domains::EDUCATION);
+            self.domain_counts.write(domains::EDUCATION, d_count + 1);
+            
+            let caller = get_caller_address();
+            let mut rep = self.reputations.read(caller);
+            assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
+            let green_stature = self.institutional_green_stature.read(caller);
+            let now = get_block_timestamp();
+            
+            update_spatiotemporal_trust(ref rep, green_stature, now);
+            apply_reputation_decay(ref rep, now, self.reputation_floor.read());
+            
+            rep.reputation_credits += 8;
+            rep.last_activity_timestamp = now;
+            self.reputations.write(caller, rep);
+        }
+
+        fn get_education_record(self: @ContractState, subject_id: felt252) -> EducationRecord {
+            self.education_records.read(subject_id)
         }
 
         fn get_institution_reputation(self: @ContractState, address: ContractAddress) -> InstitutionReputation {

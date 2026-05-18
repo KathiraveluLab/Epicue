@@ -38,3 +38,33 @@ pub struct GeologicalRecord {
     pub mineral_density: u16,
     pub timestamp: u64,
 }
+
+/// Specialized Water Quality record.
+#[derive(Drop, Serde, starknet::Store)]
+pub struct WaterRecord {
+    pub subject_id: felt252,
+    pub potability_ppm: u32,
+    pub ph_level: u16,        // Scaled by 100 (e.g., 720 = 7.2)
+    pub leak_detected: bool,
+    pub timestamp: u64,
+}
+
+/// Specialized Industrial Traceability record.
+#[derive(Drop, Serde, starknet::Store)]
+pub struct IndustrialRecord {
+    pub subject_id: felt252,
+    pub carbon_emissions_tons: u64,
+    pub steel_mill_id: felt252,
+    pub audit_passed: bool,
+    pub timestamp: u64,
+}
+
+/// Specialized Higher Education record.
+#[derive(Drop, Serde, starknet::Store)]
+pub struct EducationRecord {
+    pub subject_id: felt252,
+    pub integrity_index: u8,
+    pub inclusion_score: u8,
+    pub academic_year: u16,
+    pub timestamp: u64,
+}
