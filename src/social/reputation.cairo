@@ -1,7 +1,8 @@
 use starknet::ContractAddress;
 
-#[derive(Copy, Drop, Serde, PartialEq, starknet::Store)]
+#[derive(Copy, Drop, Serde, PartialEq, starknet::Store, Default)]
 pub enum NodeStatus {
+    #[default]
     Compliant,
     Failing,
     Byzantine,

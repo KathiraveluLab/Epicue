@@ -3,6 +3,7 @@ use epicue_core::social::reputation::{
     calculate_bounty_reward, apply_reputation_decay, apply_graded_slashing,
     detect_trust_divergence, NodeStatus
 };
+use epicue_core::core::types::{EpicueRecord, HealthRecord, domains};
 use starknet::ContractAddress;
 
 // ──────────────────────────────────────────────
@@ -109,7 +110,11 @@ mod Registry {
     use super::{EpicueRecord, HealthRecord, domains};
     use epicue_core::core::access::assert_is_authority;
     use epicue_core::social::advocate::{Advocate};
-    use epicue_core::social::reputation::{InstitutionReputation, calculate_credit_gain, calculate_bounty_reward, apply_graded_slashing, apply_reputation_decay, update_spatiotemporal_trust, calculate_dynamic_trust_level};
+    use epicue_core::social::reputation::{
+        InstitutionReputation, calculate_credit_gain, calculate_bounty_reward,
+        apply_graded_slashing, apply_reputation_decay, update_spatiotemporal_trust,
+        calculate_dynamic_trust_level, detect_trust_divergence, NodeStatus
+    };
     use epicue_core::core::types::{GeologicalRecord};
     use epicue_core::triad::validator::{check_domain_constraints, check_geospatial_bounds, validate_geological_integrity};
     use epicue_core::triad::auditor::{detect_byzantine_fault_severity, fault_severity};
@@ -404,19 +409,31 @@ mod Registry {
             assert_is_authority(self.authorities.read(caller));
             
             let id = self.proposal_count.read() + 1;
+            let mut proposer_weight = self.authority_weights.read(caller);
+            if proposer_weight == 0 { proposer_weight = 100; }
+            let proposer_vote = epicue_core::triad::governor::calculate_weighted_vote(100, proposer_weight);
+
             let mut proposal = Proposal {
                 id,
                 proposer: caller,
                 target,
                 action_type,
-                votes_for: 1, // Proposer automatically votes for
+                votes_for: proposer_vote, // Proposer automatically votes for with proper weight
                 votes_against: 0,
                 status: proposal_status::PENDING,
                 end_block: 0, 
             };
             
             // Auto-finalize if quorum reached (e.g. n=1)
-            if epicue_core::triad::governor::is_finalizable(@proposal, self.authority_count.read()) {
+            let n = self.authority_count.read();
+            let total_potential_weight = n * 100; 
+            let weighted_threshold = if proposal.action_type == epicue_core::triad::governor::actions::REMOVE_AUTHORITY {
+                (total_potential_weight * 2) / 3
+            } else {
+                (total_potential_weight / 2) + 1
+            };
+
+            if proposal.votes_for >= weighted_threshold {
                 proposal.status = proposal_status::APPROVED;
             }
 
