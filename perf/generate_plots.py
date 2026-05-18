@@ -18,7 +18,7 @@ plt.rcParams['mathtext.it'] = 'Liberation Serif:italic'
 plt.rcParams['mathtext.bf'] = 'Liberation Serif:bold'
 plt.rcParams['axes.labelweight'] = 'normal'
 plt.rcParams['axes.titleweight'] = 'bold'
-plt.rcParams['font.size'] = 13
+plt.rcParams['font.size'] = 18
 
 def run_tests_and_parse_gas():
     print("Running snforge test to collect live gas benchmarks...")
@@ -78,53 +78,61 @@ def generate_gas_bar_plot(gas_data):
             elif test_key == "test_methodology_registration_bft_failure": val = 24015070
             
         names.append(label)
-        values.append(val)
+        values.append(val / 1_000_000.0) # Convert to Millions
         
-    fig, ax = plt.subplots(figsize=(8, 6.5), dpi=300)
+    fig, ax = plt.subplots(figsize=(6.5, 5.5), dpi=300)
     
     # Elegant, curated HSL-derived colors
     colors = ['#1a365d', '#2b6cb0', '#4299e1', '#319795', '#d69e2e', '#9b2c2c']
     
-    bars = ax.bar(names, values, color=colors, edgecolor='none', width=0.5)
+    # Short labels for the x-axis to completely prevent overlap
+    x_ticks_labels = [f"Op-{i+1}" for i in range(len(names))]
+    bars = ax.bar(x_ticks_labels, values, color=colors, edgecolor='none', width=0.5)
     
     # Customizing axes
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color('#cbd5e0')
     ax.spines['bottom'].set_color('#cbd5e0')
-    ax.tick_params(colors='#4a5568', labelsize=12)
+    ax.tick_params(colors='#4a5568', labelsize=15)
     ax.grid(axis='y', linestyle='--', alpha=0.5, color='#e2e8f0')
     ax.set_axisbelow(True)
     
-    # Format y-axis with commas
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, loc: "{:,}".format(int(y))))
-    ax.set_ylabel("Starknet L2 Gas Units (Verifiable Steps)", fontsize=14, labelpad=10, color='#2d3748')
-    ax.set_title("Verifiable Computational Overhead", fontsize=15, pad=20, color='#1a202c')
-    plt.xticks(rotation=25, ha='right', fontsize=11.5)
+    # Format y-axis simply
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, loc: f"{y:g}"))
+    ax.set_ylabel("Starknet L2 Gas Units (Millions)", fontsize=18, labelpad=10, color='#2d3748')
+    ax.set_title("Verifiable Computational Overhead", fontsize=20, pad=20, color='#1a202c')
     
-    # Set y limit to give space for labels on top of bars
-    ax.set_ylim(0, max(values) * 1.18)
+    # Set y limit to give space
+    ax.set_ylim(0, max(values) * 1.1)
     
-    # Add values on the bars
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(
-            bar.get_x() + bar.get_width()/2,
-            height + (max(values) * 0.01),
-            "{:,}".format(int(height)),
-            va='bottom',
-            ha='center',
-            fontsize=11.0,
-            color='#2d3748',
-            fontweight='bold',
-            rotation=20
-        )
+    # Create beautiful legend below the plot to define color-coded operations
+    handles = [plt.Rectangle((0,0),1,1, color=colors[i]) for i in range(len(operations))]
+    legend_labels = [
+        "Op-1: BFT Quorum Check",
+        "Op-2: Byzantine Detection",
+        "Op-3: Security Rejection",
+        "Op-4: Delegated Submission",
+        "Op-5: Governance Lifecycle",
+        "Op-6: Scientific Peer Review"
+    ]
+    ax.legend(
+        handles, 
+        legend_labels, 
+        loc='upper center', 
+        bbox_to_anchor=(0.5, -0.15), 
+        ncol=2, 
+        frameon=True, 
+        fontsize=11, 
+        facecolor='#f7fafc', 
+        edgecolor='#e2e8f0'
+    )
         
     plt.tight_layout()
     plt.savefig(os.path.join(SCRIPT_DIR, "gas_comparison.pdf"), bbox_inches='tight')
     plt.close()
     print("Gas comparison plot generated at " + os.path.join(SCRIPT_DIR, "gas_comparison.pdf"))
-
+ 
 def generate_reputation_plot(gas_data):
     # We plot the dynamic reputation decay and floor enforcement from our actual tests
     # Baseline gained: 50
@@ -144,25 +152,25 @@ def generate_reputation_plot(gas_data):
     # Extracting reputation values verified in our tests
     values = [50, 48, 45, 37, 40]
     
-    fig, ax = plt.subplots(figsize=(8, 6.5), dpi=300)
+    fig, ax = plt.subplots(figsize=(6.5, 5.5), dpi=300)
     
     x = np.arange(len(labels))
     colors = ['#319795', '#3182ce', '#63b3ed', '#e53e3e', '#805ad5']
     
-    bars = ax.bar(x, values, color=colors, width=0.5)
+    # Short labels for the x-axis to completely prevent overlap
+    x_ticks_labels = [f"State-{i+1}" for i in range(len(labels))]
+    bars = ax.bar(x_ticks_labels, values, color=colors, width=0.5)
     
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color('#cbd5e0')
     ax.spines['bottom'].set_color('#cbd5e0')
-    ax.tick_params(colors='#4a5568', labelsize=12)
+    ax.tick_params(colors='#4a5568', labelsize=15)
     ax.grid(axis='y', linestyle='--', alpha=0.5, color='#e2e8f0')
     ax.set_axisbelow(True)
     
-    ax.set_ylabel("Reputation Credits ($R_c$)", fontsize=14, labelpad=10, color='#2d3748')
-    ax.set_title("Byzantine-Resilient Reputation Dynamics", fontsize=15, pad=20, color='#1a202c')
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=25, ha='right', fontsize=11.5)
+    ax.set_ylabel("Reputation Credits ($R_c$)", fontsize=18, labelpad=10, color='#2d3748')
+    ax.set_title("Byzantine-Resilient Reputation Dynamics", fontsize=20, pad=20, color='#1a202c')
     ax.set_ylim(0, 60)
     
     for bar in bars:
@@ -173,10 +181,31 @@ def generate_reputation_plot(gas_data):
             f"{yval}",
             va='bottom',
             ha='center',
-            fontsize=12.0,
+            fontsize=15.0,
             color='#2d3748',
             fontweight='bold'
         )
+        
+    # Create beautiful legend below the plot to define color-coded states
+    handles = [plt.Rectangle((0,0),1,1, color=colors[i]) for i in range(len(labels))]
+    legend_labels = [
+        "State-1: Initial Merit Gain",
+        "State-2: Reputation Decay (30d)",
+        "State-3: Cumulative Decay (60d)",
+        "State-4: Graded Slashing",
+        "State-5: Extreme Decay Floor"
+    ]
+    ax.legend(
+        handles, 
+        legend_labels, 
+        loc='upper center', 
+        bbox_to_anchor=(0.5, -0.15), 
+        ncol=2, 
+        frameon=True, 
+        fontsize=11, 
+        facecolor='#f7fafc', 
+        edgecolor='#e2e8f0'
+    )
         
     plt.tight_layout()
     plt.savefig(os.path.join(SCRIPT_DIR, "reputation_dynamics.pdf"), bbox_inches='tight')
