@@ -18,7 +18,7 @@ plt.rcParams['mathtext.it'] = 'Liberation Serif:italic'
 plt.rcParams['mathtext.bf'] = 'Liberation Serif:bold'
 plt.rcParams['axes.labelweight'] = 'normal'
 plt.rcParams['axes.titleweight'] = 'bold'
-plt.rcParams['font.size'] = 11
+plt.rcParams['font.size'] = 13
 
 def run_tests_and_parse_gas():
     print("Running snforge test to collect live gas benchmarks...")
@@ -80,39 +80,44 @@ def generate_gas_bar_plot(gas_data):
         names.append(label)
         values.append(val)
         
-    fig, ax = plt.subplots(figsize=(10, 6), dpi=300)
+    fig, ax = plt.subplots(figsize=(8, 6.5), dpi=300)
     
     # Elegant, curated HSL-derived colors
     colors = ['#1a365d', '#2b6cb0', '#4299e1', '#319795', '#d69e2e', '#9b2c2c']
     
-    bars = ax.barh(names, values, color=colors, edgecolor='none', height=0.6)
+    bars = ax.bar(names, values, color=colors, edgecolor='none', width=0.5)
     
     # Customizing axes
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color('#cbd5e0')
     ax.spines['bottom'].set_color('#cbd5e0')
-    ax.tick_params(colors='#4a5568')
-    ax.grid(axis='x', linestyle='--', alpha=0.5, color='#e2e8f0')
+    ax.tick_params(colors='#4a5568', labelsize=12)
+    ax.grid(axis='y', linestyle='--', alpha=0.5, color='#e2e8f0')
     ax.set_axisbelow(True)
     
-    # Format x-axis with commas
-    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, loc: "{:,}".format(int(x))))
-    ax.set_xlabel("Starknet L2 Gas Units (Verifiable Execution Steps)", fontsize=11, labelpad=10, color='#2d3748')
-    ax.set_title("Verifiable Computational Overhead across Epicue Operations", fontsize=13, pad=20, color='#1a202c')
+    # Format y-axis with commas
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, loc: "{:,}".format(int(y))))
+    ax.set_ylabel("Starknet L2 Gas Units (Verifiable Steps)", fontsize=14, labelpad=10, color='#2d3748')
+    ax.set_title("Verifiable Computational Overhead", fontsize=15, pad=20, color='#1a202c')
+    plt.xticks(rotation=25, ha='right', fontsize=11.5)
+    
+    # Set y limit to give space for labels on top of bars
+    ax.set_ylim(0, max(values) * 1.18)
     
     # Add values on the bars
     for bar in bars:
-        width = bar.get_width()
+        height = bar.get_height()
         ax.text(
-            width + (max(values) * 0.01),
-            bar.get_y() + bar.get_height()/2,
-            "{:,} Gas".format(int(width)),
-            va='center',
-            ha='left',
-            fontsize=9.5,
+            bar.get_x() + bar.get_width()/2,
+            height + (max(values) * 0.01),
+            "{:,}".format(int(height)),
+            va='bottom',
+            ha='center',
+            fontsize=11.0,
             color='#2d3748',
-            fontweight='bold'
+            fontweight='bold',
+            rotation=20
         )
         
     plt.tight_layout()
@@ -139,7 +144,7 @@ def generate_reputation_plot(gas_data):
     # Extracting reputation values verified in our tests
     values = [50, 48, 45, 37, 40]
     
-    fig, ax = plt.subplots(figsize=(8, 5), dpi=300)
+    fig, ax = plt.subplots(figsize=(8, 6.5), dpi=300)
     
     x = np.arange(len(labels))
     colors = ['#319795', '#3182ce', '#63b3ed', '#e53e3e', '#805ad5']
@@ -150,14 +155,14 @@ def generate_reputation_plot(gas_data):
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color('#cbd5e0')
     ax.spines['bottom'].set_color('#cbd5e0')
-    ax.tick_params(colors='#4a5568')
+    ax.tick_params(colors='#4a5568', labelsize=12)
     ax.grid(axis='y', linestyle='--', alpha=0.5, color='#e2e8f0')
     ax.set_axisbelow(True)
     
-    ax.set_ylabel("Reputation Credits ($R_c$)", fontsize=11, labelpad=10, color='#2d3748')
-    ax.set_title("Byzantine-Resilient Reputation Dynamics and Safeguards", fontsize=13, pad=20, color='#1a202c')
+    ax.set_ylabel("Reputation Credits ($R_c$)", fontsize=14, labelpad=10, color='#2d3748')
+    ax.set_title("Byzantine-Resilient Reputation Dynamics", fontsize=15, pad=20, color='#1a202c')
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=9.5, color='#2d3748')
+    ax.set_xticklabels(labels, rotation=25, ha='right', fontsize=11.5)
     ax.set_ylim(0, 60)
     
     for bar in bars:
@@ -165,10 +170,10 @@ def generate_reputation_plot(gas_data):
         ax.text(
             bar.get_x() + bar.get_width()/2,
             yval + 1,
-            f"{yval} Credits",
+            f"{yval}",
             va='bottom',
             ha='center',
-            fontsize=9.5,
+            fontsize=12.0,
             color='#2d3748',
             fontweight='bold'
         )
