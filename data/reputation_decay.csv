@@ -1,0 +1,6 @@
+timestamp_days,state,event,reputation_credits,details
+0,Initial,Submission Severity 5,50,baseline +50
+30,Decay,30-day Inactivity,48,-5% decay applied
+60,Decay,60-day Inactivity,45,cumulative decay
+90,Slashing,Auditor Signal,37,-25% penalty applied
+3650,Floor,10-year Extreme Inactivity,40,halting at floor limit

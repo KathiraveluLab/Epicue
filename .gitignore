@@ -45,6 +45,7 @@ claude.md
 AGENTS.md
 CLAUDE.md
 .venv
+venv/
 node_modules/
 portal/dist/
 portal/.env.local

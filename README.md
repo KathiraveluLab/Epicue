@@ -72,6 +72,9 @@ See the [Tutorial Guide](Tutorial.md) for a step-by-step walkthrough of institut
 ### Verifiable Use Cases
 See the [Verifiable Use Cases Guide](UseCases.md) for a detailed technical description of the domain-specific data structures and FATE alignment matrices.
 
+### Evaluation & Datasets
+For the raw datasets and `snforge` simulation logs utilized for the manuscript evaluation, please see the [Evaluation Datasets](data/README.md). All artifacts contained within were derived directly from local test executions.
+
 ### Deployment
 
 Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Architecture](docs/README.md) for a detailed graphical overview and instructions.

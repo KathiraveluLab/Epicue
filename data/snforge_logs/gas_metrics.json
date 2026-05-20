@@ -1,0 +1,8 @@
+{
+  "BFT_Quorum_Enforcement": 13840,
+  "Byzantine_Fault_Detection": 15550,
+  "Security_Rejection": 1770160,
+  "Delegated_Subject_Submission": 9251880,
+  "Governance_Lifecycle": 13754950,
+  "Scientific_Peer_Review": 24015070
+}
