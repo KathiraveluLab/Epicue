@@ -49,3 +49,10 @@ venv/
 node_modules/
 portal/dist/
 portal/.env.local
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz

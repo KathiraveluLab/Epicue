@@ -574,7 +574,7 @@ mod Registry {
             let w_impact = self.get_domain_impact(domains::WATER);
             let i_impact = self.get_domain_impact(domains::INDUSTRY);
             let e_impact = self.get_domain_impact(domains::EDUCATION);
-            let g_impact = self.get_domain_impact(domains::GEOSPATIAL);
+            let g_impact = self.get_domain_impact(domains::GEOLOGY);
             let c_index = self.get_collaboration_index();
 
             calculate_sustainability_score(h_impact, w_impact, i_impact, e_impact, g_impact, c_index)
@@ -632,13 +632,13 @@ mod Registry {
         }
 
         fn get_filtered_research(self: @ContractState, threshold: u64) -> Array<felt252> {
-             let mut domains_list = array![domains::HEALTHCARE, domains::WATER, domains::INDUSTRY, domains::EDUCATION, domains::GEOSPATIAL];
+             let mut domains_list = array![domains::HEALTHCARE, domains::WATER, domains::INDUSTRY, domains::EDUCATION, domains::GEOLOGY];
              let mut impacts = array![
                  self.get_domain_impact(domains::HEALTHCARE),
                  self.get_domain_impact(domains::WATER),
                  self.get_domain_impact(domains::INDUSTRY),
                  self.get_domain_impact(domains::EDUCATION),
-                 self.get_domain_impact(domains::GEOSPATIAL)
+                 self.get_domain_impact(domains::GEOLOGY)
              ];
              filter_high_impact_domains(domains_list, impacts, threshold)
         }
@@ -835,7 +835,7 @@ mod Registry {
             // Professional Data Accountability: Pass the actual record metadata
             self.emit(Event::EpicueRecordSubmitted(EpicueRecordSubmitted {
                 subject_id,
-                domain: domains::GEOSPATIAL,
+                domain: domains::GEOLOGY,
                 category: 'geology_sample',
                 severity: 3_u8,
                 timestamp: timestamp,
@@ -850,8 +850,8 @@ mod Registry {
             let count = self.record_count.read() + 1;
             self.record_ids.write(count, subject_id);
             self.record_count.write(count);
-            let d_count = self.domain_counts.read(domains::GEOSPATIAL);
-            self.domain_counts.write(domains::GEOSPATIAL, d_count + 1);
+            let d_count = self.domain_counts.read(domains::GEOLOGY);
+            self.domain_counts.write(domains::GEOLOGY, d_count + 1);
             
             // Institutional Reputation with Decay and Trust Integral
             let caller = get_caller_address();

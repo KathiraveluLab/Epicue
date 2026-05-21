@@ -28,8 +28,8 @@ pub fn check_domain_constraints(domain: felt252, category: felt252, severity: u8
         if category == 'academic_integrity' {
             assert(severity >= 3_u8, 'Integrity report min priority');
         }
-    } else if domain == domains::GEOSPATIAL {
-        assert(severity <= 5_u8, 'Invalid geo severity');
+    } else if domain == domains::GEOLOGY {
+        assert(severity <= 5_u8, 'Invalid geology severity');
     }
 }
 

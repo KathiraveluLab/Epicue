@@ -19,6 +19,7 @@ pub fn get_default_domain_name(domain: felt252) -> felt252 {
     else if domain == domains::WATER { 'Water Quality' }
     else if domain == domains::INDUSTRY { 'Industrial Traceability' }
     else if domain == domains::EDUCATION { 'Higher Education' }
+    else if domain == domains::GEOLOGY { 'Geology' }
     else { 'Unknown Domain' }
 }
 
@@ -27,6 +28,7 @@ pub fn get_default_domain_desc(domain: felt252) -> felt252 {
     else if domain == domains::WATER { 'Potability & leak alerts' }
     else if domain == domains::INDUSTRY { 'Steel mill audit & carbon trace' }
     else if domain == domains::EDUCATION { 'Academic integrity & inclusion' }
+    else if domain == domains::GEOLOGY { 'Mineral density & depth audits' }
     else { 'Project metadata pending' }
 }
 
@@ -49,8 +51,8 @@ pub fn get_long_domain_desc(domain: felt252) -> felt252 {
         'Verifiable healthcare reports'
     } else if domain == domains::WATER {
         'On-chain water monitoring'
-    } else if domain == domains::GEOSPATIAL {
-        'STARK-based spatial proofs'
+    } else if domain == domains::GEOLOGY {
+        'STARK-based geological proofs'
     } else {
         'Epicue framework research'
     }
