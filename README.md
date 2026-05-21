@@ -96,7 +96,7 @@ Epicue supports a unified deployment architecture for both local and public targ
 The framework enforces a rigorous $n=3f+1$ Byzantine Fault Tolerance model. Security audits are driven by a hybrid **ZK Coprocessor Architecture**:
 - **Off-Chain Proving**: An Erlang-based daemon (`daemon/auditor.erl`) continuously polls the Starknet RPC, running heavy statistical analysis on institutional records to detect anomalies. Upon detection, it triggers a local Cairo program to generate a cryptographic STARK proof.
 - **On-Chain Verification**: The daemon submits this proof via the `claim_security_bounty` transaction to the Epicue Registry. The on-chain Triad modules cheaply verify the STARK proof and apply the appropriate institutional slashing.
-- **Manual Fallback**: Institutional watchdogs can bypass the automated daemon and manually submit deviation metrics and proof hashes via the Web Portal UI to ensure network liveness and accessibility.
+- **Manual Fallback**: Institutional watchdogs can bypass the automated daemon and manually trigger the slashing sequence via the Web Portal UI by providing the malicious address, the empirically calculated **Deviation \%**, the **Total Reviews** sample size, and the corresponding **Off-chain STARK Proof Hash**.
 
 ---
 *Strengthening citizens' trust through objective cryptographic guarantees.*
