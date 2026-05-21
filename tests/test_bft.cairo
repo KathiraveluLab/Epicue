@@ -74,7 +74,7 @@ fn test_bounty_collection_simulation() {
     governance_add_authority(dispatcher, auditor, byzantine_node, auditor);
 
     start_cheat_caller_address(dispatcher.contract_address, auditor);
-    dispatcher.claim_security_bounty(byzantine_node);
+    dispatcher.claim_security_bounty(byzantine_node, 40, 5, 'STARK_PROOF_HASH');
     stop_cheat_caller_address(dispatcher.contract_address);
 
     let final_bounty = dispatcher.get_bounty_balance(auditor);
@@ -153,7 +153,7 @@ fn test_graded_slashing_minor() {
     
     // 3. Claim bounty for MINOR fault
     start_cheat_caller_address(dispatcher.contract_address, auth1);
-    dispatcher.claim_security_bounty(deviant_node);
+    dispatcher.claim_security_bounty(deviant_node, 40, 5, 'STARK_PROOF_HASH');
     stop_cheat_caller_address(dispatcher.contract_address);
 
     let final_rep = dispatcher.get_institution_reputation(deviant_node).reputation_credits;
@@ -171,3 +171,77 @@ fn test_prevent_direct_authority_update() {
     dispatcher.add_authority(0x222.try_into().unwrap());
     stop_cheat_caller_address(dispatcher.contract_address);
 }
+
+#[test]
+fn test_submit_geological_record_success() {
+    let auth1: ContractAddress = 0x111.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+    
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    use epicue_core::core::types::GeologicalRecord;
+    
+    // Coordinates inside Research Zone Alpha: lat = 4100, lon = -7400
+    // Depth = 600, Density = 600 (both valid)
+    let record = GeologicalRecord {
+        subject_id: 0x999,
+        latitude: 4100,
+        longitude: -7400,
+        sample_depth: 600,
+        mineral_density: 600,
+        timestamp: 1000
+    };
+    
+    dispatcher.submit_geological_record(record);
+    stop_cheat_caller_address(dispatcher.contract_address);
+    
+    let saved_record = dispatcher.get_geological_record(0x999);
+    assert(saved_record.latitude == 4100, 'Latitude mismatch');
+    assert(saved_record.longitude == -7400, 'Longitude mismatch');
+}
+
+#[test]
+#[should_panic(expected: ('Outside geo-fenced research', ))]
+fn test_submit_geological_record_out_of_bounds() {
+    let auth1: ContractAddress = 0x111.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+    
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    use epicue_core::core::types::GeologicalRecord;
+    
+    // Coordinates outside any zone: lat = 5000, lon = 5000
+    let record = GeologicalRecord {
+        subject_id: 0x999,
+        latitude: 5000,
+        longitude: 5000,
+        sample_depth: 100,
+        mineral_density: 100,
+        timestamp: 1000
+    };
+    
+    dispatcher.submit_geological_record(record);
+    stop_cheat_caller_address(dispatcher.contract_address);
+}
+
+#[test]
+#[should_panic(expected: ('Density too low for depth', ))]
+fn test_submit_geological_record_invalid_density() {
+    let auth1: ContractAddress = 0x111.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+    
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    use epicue_core::core::types::GeologicalRecord;
+    
+    // Inside Zone Alpha, but depth = 1200 (deep) and density = 150 (too low)
+    let record = GeologicalRecord {
+        subject_id: 0x999,
+        latitude: 4100,
+        longitude: -7400,
+        sample_depth: 1200,
+        mineral_density: 150,
+        timestamp: 1000
+    };
+    
+    dispatcher.submit_geological_record(record);
+    stop_cheat_caller_address(dispatcher.contract_address);
+}
+
