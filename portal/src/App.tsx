@@ -526,6 +526,10 @@ function GovernanceSection({ onNewProposalClick, onConnectClick }: { onNewPropos
 
 function AuditorSection() {
   const [maliciousAddress, setMaliciousAddress] = useState('');
+  const [consentDeviation, setConsentDeviation] = useState('');
+  const [totalReviews, setTotalReviews] = useState('');
+  const [proofHash, setProofHash] = useState('');
+
   const { data: score } = useReadContract({
     abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -545,7 +549,7 @@ function AuditorSection() {
       {
         contractAddress: CONTRACT_ADDRESS as `0x${string}`,
         entrypoint: 'claim_security_bounty',
-        calldata: [maliciousAddress],
+        calldata: [maliciousAddress, consentDeviation || '0', totalReviews || '0', proofHash || '0'],
       }
     ]
   });
@@ -581,6 +585,29 @@ function AuditorSection() {
           onChange={(e) => setMaliciousAddress(e.target.value)}
           placeholder="Malicious Node Address (0x...)"
           className="w-full bg-white border border-slate-200 rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-rose-500/50 transition-all mb-4 text-slate-900"
+        />
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <input 
+            type="number" 
+            value={consentDeviation}
+            onChange={(e) => setConsentDeviation(e.target.value)}
+            placeholder="Deviation % (e.g. 40)"
+            className="w-full bg-white border border-slate-200 rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-rose-500/50 transition-all text-slate-900"
+          />
+          <input 
+            type="number" 
+            value={totalReviews}
+            onChange={(e) => setTotalReviews(e.target.value)}
+            placeholder="Total Reviews (e.g. 10)"
+            className="w-full bg-white border border-slate-200 rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-rose-500/50 transition-all text-slate-900"
+          />
+        </div>
+        <input 
+          type="text" 
+          value={proofHash}
+          onChange={(e) => setProofHash(e.target.value)}
+          placeholder="Off-chain STARK Proof Hash (0x...)"
+          className="w-full bg-white border border-slate-200 rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-rose-500/50 transition-all mb-4 text-slate-900 font-mono"
         />
         <button 
           onClick={() => claimBounty()}

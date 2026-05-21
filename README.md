@@ -17,14 +17,15 @@ Epicue is engineered for the untrusted Internet. Unlike typical centralized regi
 The codebase is structured into logical layers to facilitate inter-institutional scale-up:
 
 ```text
-├── src/# Cairo Core Implementation
+├── src/                # Cairo Core Implementation
 │   ├── core/           # Fundamental Logic (Access, Metadata, Types)
 │   ├── triad/          # The Epicue Triad (Validator, Auditor, Governor)
 │   ├── research/       # Scientific Productivity (BFT Peer Review, Methodology)
 │   ├── social/         # Equity & Inclusion (DRI, Reputation, Bounty)
 │   └── metrics/        # High-Level Analytics (Sustainability Ledger)
+├── daemon/             # Erlang Coprocessor (Off-chain STARK Prover Host)
 ├── tests/              # Byzantine Resilience & Performance Tests
-└── portal/        # Production-Grade Vite Client
+└── portal/             # Vite Client
 ```
 
 ## Institutional Portal
@@ -91,8 +92,11 @@ Epicue supports a unified deployment architecture for both local and public targ
    ./deployment/deploy_sepolia.sh
    ```
 
-## Security & Byzantine Resilience
-The framework enforces a rigorous $n=3f+1$ Byzantine Fault Tolerance model. Security audits are performed on-chain by the Epicue Triad, and proven malicious behavior results in institutional slashing.
+## Security, Byzantine Resilience, & ZK Coprocessors
+The framework enforces a rigorous $n=3f+1$ Byzantine Fault Tolerance model. Security audits are driven by a hybrid **ZK Coprocessor Architecture**:
+- **Off-Chain Proving**: An Erlang-based daemon (`daemon/auditor.erl`) continuously polls the Starknet RPC, running heavy statistical analysis on institutional records to detect anomalies. Upon detection, it triggers a local Cairo program to generate a cryptographic STARK proof.
+- **On-Chain Verification**: The daemon submits this proof via the `claim_security_bounty` transaction to the Epicue Registry. The on-chain Triad modules cheaply verify the STARK proof and apply the appropriate institutional slashing.
+- **Manual Fallback**: Institutional watchdogs can bypass the automated daemon and manually submit deviation metrics and proof hashes via the Web Portal UI to ensure network liveness and accessibility.
 
 ---
 *Strengthening citizens' trust through objective cryptographic guarantees.*

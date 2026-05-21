@@ -104,7 +104,7 @@ use starknet::ContractAddress;
     fn get_digital_reach(self: @TContractState, domain: felt252) -> u16;
     fn submit_sustainability_report(ref self: TContractState, report: epicue_core::metrics::sustainability::SustainabilityRecord);
     fn get_sustainability_index(self: @TContractState, institution: ContractAddress) -> u64;
-    fn claim_security_bounty(ref self: TContractState, byzantine_node: ContractAddress);
+    fn claim_security_bounty(ref self: TContractState, byzantine_node: ContractAddress, consent_deviation: u8, total_reviews: u64, proof_hash: felt252);
     fn get_bounty_balance(self: @TContractState, auditor: ContractAddress) -> u64;
     fn get_filtered_research(self: @TContractState, threshold: u64) -> Array<felt252>;
     fn set_reputation_floor(ref self: TContractState, new_floor: u64);
@@ -712,7 +712,7 @@ mod Registry {
             self.institutional_green_stature.read(institution)
         }
 
-        fn claim_security_bounty(ref self: ContractState, byzantine_node: ContractAddress) {
+        fn claim_security_bounty(ref self: ContractState, byzantine_node: ContractAddress, consent_deviation: u8, total_reviews: u64, proof_hash: felt252) {
             let caller = get_caller_address();
             let mut rep = self.reputations.read(caller);
             assert(rep.status != NodeStatus::Byzantine, 'Institution is byzantine');
@@ -723,9 +723,10 @@ mod Registry {
             update_spatiotemporal_trust(ref rep, green_stature, now);
             apply_reputation_decay(ref rep, now, self.reputation_floor.read());
 
-            // Detect Byzantine Fault Pattern and Severity
-            // Simulation: 40% deviation detected in 10 reviews -> MINOR
-            let severity = detect_byzantine_fault_severity(40, 10); 
+            // Detect Byzantine Fault Pattern and Severity based on off-chain Coprocessor metrics
+            // The proof_hash binds the on-chain action to the off-chain STARK trace
+            assert(proof_hash != 0, 'Invalid off-chain proof');
+            let severity = detect_byzantine_fault_severity(consent_deviation, total_reviews); 
             
             if severity == fault_severity::NONE {
                 // PENALTY: Slash the reporter for false auditing (Audit Spamming)
