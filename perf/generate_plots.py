@@ -80,7 +80,7 @@ def generate_gas_bar_plot(gas_data):
         names.append(label)
         values.append(val / 1_000_000.0) # Convert to Millions
         
-    fig, ax = plt.subplots(figsize=(6.5, 5.5), dpi=300)
+    fig, ax = plt.subplots(figsize=(6.5, 3.2), dpi=300)
     
     # Elegant, curated HSL-derived colors
     colors = ['#1a365d', '#2b6cb0', '#4299e1', '#319795', '#d69e2e', '#9b2c2c']
@@ -100,7 +100,7 @@ def generate_gas_bar_plot(gas_data):
     
     # Format y-axis simply
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, loc: f"{y:g}"))
-    ax.set_ylabel("Starknet L2 Gas Units (Millions)", fontsize=18, labelpad=10, color='#2d3748')
+    ax.set_ylabel("Gas Units (Millions)", fontsize=18, labelpad=10, color='#2d3748')
     
     # Set y limit to give space
     ax.set_ylim(0, max(values) * 1.1)
@@ -115,11 +115,11 @@ def generate_gas_bar_plot(gas_data):
         "Op-5: Governance Lifecycle",
         "Op-6: Scientific Peer Review"
     ]
-    ax.legend(
+    leg = ax.legend(
         handles, 
         legend_labels, 
         loc='upper center', 
-        bbox_to_anchor=(0.5, -0.15), 
+        bbox_to_anchor=(0.5, -0.22), 
         ncol=2, 
         frameon=True, 
         fontsize=11, 
@@ -127,8 +127,7 @@ def generate_gas_bar_plot(gas_data):
         edgecolor='#e2e8f0'
     )
         
-    plt.tight_layout()
-    plt.savefig(os.path.join(SCRIPT_DIR, "gas_comparison.pdf"), bbox_inches='tight')
+    plt.savefig(os.path.join(SCRIPT_DIR, "gas_comparison.pdf"), bbox_extra_artists=(leg,), bbox_inches='tight')
     plt.close()
     print("Gas comparison plot generated at " + os.path.join(SCRIPT_DIR, "gas_comparison.pdf"))
  
@@ -151,7 +150,7 @@ def generate_reputation_plot(gas_data):
     # Extracting reputation values verified in our tests
     values = [50, 48, 45, 37, 40]
     
-    fig, ax = plt.subplots(figsize=(6.5, 5.5), dpi=300)
+    fig, ax = plt.subplots(figsize=(6.5, 3.2), dpi=300)
     
     x = np.arange(len(labels))
     colors = ['#319795', '#3182ce', '#63b3ed', '#e53e3e', '#805ad5']
@@ -168,7 +167,7 @@ def generate_reputation_plot(gas_data):
     ax.grid(axis='y', linestyle='--', alpha=0.5, color='#e2e8f0')
     ax.set_axisbelow(True)
     
-    ax.set_ylabel("Reputation Credits ($R_c$)", fontsize=18, labelpad=10, color='#2d3748')
+    ax.set_ylabel("$R_c$", fontsize=18, labelpad=10, color='#2d3748')
     ax.set_ylim(0, 60)
     
     for bar in bars:
@@ -193,11 +192,11 @@ def generate_reputation_plot(gas_data):
         "State-4: Graded Slashing",
         "State-5: Extreme Decay Floor"
     ]
-    ax.legend(
+    leg = ax.legend(
         handles, 
         legend_labels, 
         loc='upper center', 
-        bbox_to_anchor=(0.5, -0.15), 
+        bbox_to_anchor=(0.5, -0.22), 
         ncol=2, 
         frameon=True, 
         fontsize=11, 
@@ -205,8 +204,7 @@ def generate_reputation_plot(gas_data):
         edgecolor='#e2e8f0'
     )
         
-    plt.tight_layout()
-    plt.savefig(os.path.join(SCRIPT_DIR, "reputation_dynamics.pdf"), bbox_inches='tight')
+    plt.savefig(os.path.join(SCRIPT_DIR, "reputation_dynamics.pdf"), bbox_extra_artists=(leg,), bbox_inches='tight')
     plt.close()
     print("Reputation dynamics plot generated at " + os.path.join(SCRIPT_DIR, "reputation_dynamics.pdf"))
 

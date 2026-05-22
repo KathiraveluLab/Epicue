@@ -71,3 +71,6 @@ daemon/*_memory.json
 daemon/*_proof.json
 daemon/*_public_input.json
 daemon/*_private_input.json
+
+# Performance plot outputs
+perf/*.pdf
