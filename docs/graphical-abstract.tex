@@ -42,7 +42,7 @@
 \node[layer=clOrange] (auditor)   at ( 0,  -3.2) {Auditor};
 \node[layer=clTeal]   (governor)  at ( 2.8,-3.2) {Governor};
 \begin{pgfonlayer}{background}
-  \node[grpbox=clRed, fit=(validator)(auditor)(governor), label={[lbl,text=clRed]left:Epicue Triad}] (triad) {};
+  \node[grpbox=clRed, fit=(validator)(auditor)(governor), label={[lbl,text=clRed]right:Epicue Triad}] (triad) {};
 \end{pgfonlayer}
 
 %% ── Row 3 ──────────────────────────────────────────────────────────────────
@@ -95,9 +95,16 @@
   \node[grpbox=clGold, fit=(sdgdri)(sdggsi)(sdgfate), label={[lbl,text=clGold]below:UN SDG Metrics}] (sdgs) {};
 \end{pgfonlayer}
 
+%% ── ZK Coprocessor ─────────────────────────────────────────────────────────
+\node[mod=clOrange] (daemon) at (-6.5,-1.6) {Erlang Daemon};
+\node[mod=clOrange, below=10pt of daemon] (prover) {Stone Prover};
+\begin{pgfonlayer}{background}
+  \node[grpbox=clOrange, fit=(daemon)(prover), label={[lbl,text=clOrange]below:ZK Coprocessor}] (coproc) {};
+\end{pgfonlayer}
+
 %% ── Deployment ─────────────────────────────────────────────────────────────
-\node[mod=clGray] (sepolia) at (6.5,-1.3) {Sepolia};
-\node[mod=clGray, above=2pt of sepolia] (devnet) {Devnet};
+\node[mod=clGray] (sepolia) at (6.5,-1.6) {Sepolia};
+\node[mod=clGray, above=4pt of sepolia] (devnet) {Devnet};
 \begin{pgfonlayer}{background}
   \node[grpbox=clGray, fit=(devnet)(sepolia), label={[lbl,text=clGray]above:Deploy}] (deploy) {};
 \end{pgfonlayer}
@@ -116,13 +123,17 @@
 \draw[arr] (governor) -- (metmod.north);
 \draw[arr] (governor) -- (triadmod.north);
 
-\draw[arr] (domains.west) -- ++(-0.3,0) |- (registry.west);
+\draw[arr] (domains.west) -- ++(-1.2,0) |- (-2.2,-0.7) |- ([xshift=6pt]registry.north west);
 \draw[arr] (domains.south -| dhc) -- (sdgdri);
 \draw[arr] (domains.south -| dedu) -- (sdgdri);
 \draw[arr] (domains.south -| dwat) -- (sdggsi);
 \draw[arr] (domains.south -| dind) -- (sdggsi);
 \draw[arr] (domains.south -| dgeo) -- (sdgfate);
 \draw[darr] (registry.east) -- (deploy.west);
+
+\draw[darr] ([yshift=4pt]registry.west) -- ([yshift=4pt]daemon.east);
+\draw[arr] ([yshift=-4pt]daemon.east) -- ([yshift=-4pt]registry.west);
+\draw[arr] (daemon) -- (prover);
 
 \end{tikzpicture}
 \end{adjustbox}
