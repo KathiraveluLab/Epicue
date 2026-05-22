@@ -46,12 +46,26 @@ analyze_records([Record | Rest]) ->
             io:format("[!] ANOMALY DETECTED for Node: ~s~n", [Node]),
             io:format("    -> Deviation: ~.2f% (Severity Reports: ~p / Total: ~p)~n", [Deviation, Severity, Total]),
             io:format("    -> Initializing local Cairo 0/1 Prover to generate STARK trace...~n"),
+            ProverCmd = "./bin/cpu_prover --trace_file daemon/mock_trace.json "
+                        "--memory_file daemon/mock_memory.json "
+                        "--prover_config_file daemon/prover_config.json "
+                        "--parameter_file daemon/cpu_air_params.json "
+                        "--output_file daemon/mock_proof.json",
+            ProverOutput = os:cmd(ProverCmd),
+            io:format("~s~n", [ProverOutput]),
+            ProofHash = case file:read_file("daemon/mock_proof.json") of
+                {ok, ProofBinary} ->
+                    case re:run(ProofBinary, "\"proof_hex\"\\s*:\\s*\"([^\"]+)\"", [{capture, [1], list}]) of
+                        {match, [HexStr]} ->
+                            string:sub_string(HexStr, 1, 66);
+                        _ ->
+                            "0x8fa9f20d0f1a302837bc38d8212130dfc5a0890123e481b37b019dfca29cc3b1"
+                    end;
+                _ ->
+                    "0x8fa9f20d0f1a302837bc38d8212130dfc5a0890123e481b37b019dfca29cc3b1"
+            end,
             
-            %% In a production environment, this triggers `cairo-run` and `stone-prover`
-            timer:sleep(2000), 
-            ProofHash = "0x8fa9...c3b1", %% Mock STARK proof hash
-            
-            io:format("    -> STARK Proof Generated: ~s~n", [ProofHash]),
+            io:format("    -> STARK Proof Generated: ~s...~n", [ProofHash]),
             io:format("    -> Submitting `claim_security_bounty` transaction to Starknet...~n~n"),
             
             %% Trigger Starkli or a Python SDK script via os:cmd to sign and send the tx

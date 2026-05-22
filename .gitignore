@@ -56,3 +56,18 @@ portal/.env.local
 *.toc
 *.out
 *.synctex.gz
+
+# Erlang build outputs
+*.beam
+
+# Compiled C++ Binaries for Stone Prover
+bin/cpu_air_prover
+bin/cpu_air_verifier
+
+# Cairo compilation and VM execution artifacts
+daemon/*_compiled.json
+daemon/*_trace.json
+daemon/*_memory.json
+daemon/*_proof.json
+daemon/*_public_input.json
+daemon/*_private_input.json

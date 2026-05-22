@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+import sys
+import subprocess
+import os
+import argparse
+
+def main():
+    parser = argparse.ArgumentParser(description="Stone Prover End-to-End Cryptographic Orchestrator")
+    parser.add_argument("--trace_file", default="daemon/mock_trace.json")
+    parser.add_argument("--memory_file", default="daemon/mock_memory.json")
+    parser.add_argument("--prover_config_file", default="daemon/prover_config.json")
+    parser.add_argument("--parameter_file", default="daemon/cpu_air_params.json")
+    parser.add_argument("--output_file", default="daemon/mock_proof.json")
+    
+    args = parser.parse_args()
+    
+    # 1. Compile cairo program to proof mode CASM
+    print("[*] Compiling Cairo program to proof-compatible CASM...")
+    compile_cmd = [
+        ".venv/bin/cairo-compile",
+        "daemon/fibonacci.cairo",
+        "--output", "daemon/fibonacci_compiled.json",
+        "--proof_mode"
+    ]
+    print(f"    Running: {' '.join(compile_cmd)}")
+    subprocess.run(compile_cmd, check=True)
+    
+    # 2. Run Cairo VM in proof mode
+    print("[*] Executing Cairo VM in proof mode (generating trace & memory)...")
+    run_cmd = [
+        ".venv/bin/cairo-run",
+        "--program=daemon/fibonacci_compiled.json",
+        "--layout=small",
+        "--program_input=daemon/fibonacci_input.json",
+        "--air_public_input=daemon/fibonacci_public_input.json",
+        "--air_private_input=daemon/fibonacci_private_input.json",
+        f"--trace_file={args.trace_file}",
+        f"--memory_file={args.memory_file}",
+        "--min_steps=512",
+        "--proof_mode"
+    ]
+    print(f"    Running: {' '.join(run_cmd)}")
+    subprocess.run(run_cmd, check=True)
+    
+    # 3. Run cpu_air_prover
+    print("[*] Invoking Stone Prover C++ binary to construct STARK proof...")
+    prover_cmd = [
+        "./bin/cpu_air_prover",
+        f"--out_file={args.output_file}",
+        "--private_input_file=daemon/fibonacci_private_input.json",
+        "--public_input_file=daemon/fibonacci_public_input.json",
+        f"--prover_config_file={args.prover_config_file}",
+        f"--parameter_file={args.parameter_file}"
+    ]
+    print(f"    Running: {' '.join(prover_cmd)}")
+    subprocess.run(prover_cmd, check=True)
+    
+    # 4. Run cpu_air_verifier
+    print("[*] Verifying generated STARK proof with Stone Verifier...")
+    verifier_cmd = [
+        "./bin/cpu_air_verifier",
+        f"--in_file={args.output_file}"
+    ]
+    print(f"    Running: {' '.join(verifier_cmd)}")
+    subprocess.run(verifier_cmd, check=True)
+    
+    print("[+] Real STARK proof generated and verified successfully!")
+    print(f"[+] Output written to: {args.output_file}")
+
+if __name__ == "__main__":
+    main()
