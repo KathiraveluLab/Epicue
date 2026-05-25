@@ -70,3 +70,46 @@ fn test_prevent_double_voting() {
     dispatcher.vote_on_proposal(prop2, true);
     stop_cheat_caller_address(dispatcher.contract_address);
 }
+
+#[test]
+fn test_weighted_voting_flow() {
+    let auth1: ContractAddress = 0x111.try_into().unwrap();
+    let auth2: ContractAddress = 0x222.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+
+    // Auth1 adds Auth2 via governance (n=1, auto-approves)
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    let prop1 = dispatcher.propose_action(auth2, actions::ADD_AUTHORITY);
+    dispatcher.execute_proposal(prop1);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    // Auth1 proposes to change its own weight to 200 (n=2, proposer votes with weight 100, threshold is 101, so PENDING)
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    let prop_weight = dispatcher.propose_weight_action(auth1, 200);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    let proposal = dispatcher.get_proposal(prop_weight);
+    assert(proposal.status == proposal_status::PENDING, 'Should be pending');
+
+    // Auth2 votes for the weight change (votes_for becomes 200, which is >= 101, status becomes APPROVED)
+    start_cheat_caller_address(dispatcher.contract_address, auth2);
+    dispatcher.vote_on_proposal(prop_weight, true);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    let proposal = dispatcher.get_proposal(prop_weight);
+    assert(proposal.status == proposal_status::APPROVED, 'Should be approved');
+
+    // Execute the weight change
+    dispatcher.execute_proposal(prop_weight);
+
+    // Verify Auth1 now has weight 200 by proposing a new action. 
+    // Auth1 proposes Auth3. Total weight is 200 (Auth1) + 100 (Auth2) = 300.
+    // Quorum threshold is 151. Auth1's vote is 200, which is >= 151, so it should auto-approve.
+    let auth3: ContractAddress = 0x333.try_into().unwrap();
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    let prop2 = dispatcher.propose_action(auth3, actions::ADD_AUTHORITY);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    let proposal = dispatcher.get_proposal(prop2);
+    assert(proposal.status == proposal_status::APPROVED, 'Should be auto-approved');
+}

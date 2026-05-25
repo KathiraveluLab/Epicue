@@ -43,6 +43,7 @@ use starknet::ContractAddress;
 
     // Governance Voting
     fn propose_action(ref self: TContractState, target: ContractAddress, action_type: felt252) -> u64;
+    fn propose_weight_action(ref self: TContractState, target: ContractAddress, new_weight: u16) -> u64;
     fn vote_on_proposal(ref self: TContractState, proposal_id: u64, support: bool);
     fn finalize_voting(ref self: TContractState, proposal_id: u64);
     fn execute_proposal(ref self: TContractState, proposal_id: u64);
@@ -171,6 +172,7 @@ mod Registry {
         advocate_count: u64,
         // BFT Weighted Governance
         authority_weights: Map<ContractAddress, u16>,
+        proposed_weights: Map<u64, u16>,
         // Research Stats Storage
         domain_total_severity: Map<felt252, u64>,
         // Natural Sciences Storage
@@ -462,6 +464,43 @@ mod Registry {
             id
         }
 
+        fn propose_weight_action(ref self: ContractState, target: ContractAddress, new_weight: u16) -> u64 {
+            let caller = get_caller_address();
+            assert_is_authority(self.authorities.read(caller));
+            
+            let id = self.proposal_count.read() + 1;
+            let mut proposer_weight = self.authority_weights.read(caller);
+            if proposer_weight == 0 { proposer_weight = 100; }
+            let proposer_vote = epicue_core::triad::governor::calculate_weighted_vote(100, proposer_weight);
+
+            let mut proposal = Proposal {
+                id,
+                proposer: caller,
+                target,
+                action_type: epicue_core::triad::governor::actions::SET_AUTHORITY_WEIGHT,
+                votes_for: proposer_vote, // Proposer automatically votes for with proper weight
+                votes_against: 0,
+                status: proposal_status::PENDING,
+                end_block: 0, 
+            };
+            
+            // Auto-finalize if quorum reached (e.g. n=1)
+            let n = self.authority_count.read();
+            let total_potential_weight = n * 100; 
+            let weighted_threshold = (total_potential_weight / 2) + 1;
+
+            if proposal.votes_for >= weighted_threshold {
+                proposal.status = proposal_status::APPROVED;
+            }
+
+            self.proposals.write(id, proposal);
+            self.proposed_weights.write(id, new_weight);
+            self.proposal_count.write(id);
+            self.votes.write((id, caller), true);
+            
+            id
+        }
+
         fn vote_on_proposal(ref self: ContractState, proposal_id: u64, support: bool) {
             let caller = get_caller_address();
             assert_is_authority(self.authorities.read(caller));
@@ -543,6 +582,9 @@ mod Registry {
                 let target_felt: felt252 = proposal.target.into();
                 let new_floor: u64 = target_felt.try_into().unwrap_or(0);
                 self.reputation_floor.write(new_floor);
+            } else if proposal.action_type == epicue_core::triad::governor::actions::SET_AUTHORITY_WEIGHT {
+                let new_weight = self.proposed_weights.read(proposal_id);
+                self.authority_weights.write(proposal.target, new_weight);
             }
             
             proposal.status = 'EXECUTED';
