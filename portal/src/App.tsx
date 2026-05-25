@@ -285,16 +285,23 @@ function ProposalRow({ id, onConnectClick }: { id: number, onConnectClick: () =>
 function NewProposalModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const [target, setTarget] = useState('');
   const [type, setType] = useState('ADD_AUTH'); // Default: ADD_AUTHORITY
+  const [newWeight, setNewWeight] = useState('100');
 
-  const { send: propose } = useSendTransaction({
-    calls: [
-      {
-        contractAddress: CONTRACT_ADDRESS as `0x${string}`,
-        entrypoint: 'propose_action',
-        calldata: [target, type],
-      }
-    ]
-  });
+  const calls = type === 'SET_WEIGHT' ? [
+    {
+      contractAddress: CONTRACT_ADDRESS as `0x${string}`,
+      entrypoint: 'propose_weight_action',
+      calldata: [target, newWeight],
+    }
+  ] : [
+    {
+      contractAddress: CONTRACT_ADDRESS as `0x${string}`,
+      entrypoint: 'propose_action',
+      calldata: [target, type],
+    }
+  ];
+
+  const { send: propose } = useSendTransaction({ calls });
 
   if (!isOpen) return null;
 
@@ -315,11 +322,14 @@ function NewProposalModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
               <option value="ADD_AUTH">Add Authority Node</option>
               <option value="REMOVE_AUTH">Remove Authority Node</option>
               <option value="SET_FLOOR">Adjust Reputation Floor</option>
+              <option value="SET_WEIGHT">Adjust Authority Weight</option>
             </select>
           </div>
           
           <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Target Address / Value</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">
+              {type === 'SET_WEIGHT' ? 'Authority Address' : 'Target Address / Value'}
+            </label>
             <input 
               type="text"
               value={target}
@@ -328,6 +338,19 @@ function NewProposalModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-violet-500/50"
             />
           </div>
+
+          {type === 'SET_WEIGHT' && (
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">New Weight (0 - 65535)</label>
+              <input 
+                type="number"
+                value={newWeight}
+                onChange={(e) => setNewWeight(e.target.value)}
+                placeholder="100"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-violet-500/50"
+              />
+            </div>
+          )}
 
           <div className="flex gap-3 pt-4">
             <button 

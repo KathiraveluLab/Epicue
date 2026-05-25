@@ -126,6 +126,16 @@ export const CONTRACT_ABI = [
       },
       {
         type: "function",
+        name: "propose_weight_action",
+        inputs: [
+          { name: "target", type: "core::starknet::contract_address::ContractAddress" },
+          { name: "new_weight", type: "core::integer::u16" },
+        ],
+        outputs: [{ type: "core::integer::u64" }],
+        state_mutability: "external",
+      },
+      {
+        type: "function",
         name: "vote_on_proposal",
         inputs: [
           { name: "proposal_id", type: "core::integer::u64" },
