@@ -46,13 +46,13 @@
 \end{pgfonlayer}
 
 %% ── Row 3 ──────────────────────────────────────────────────────────────────
-\node[mod=clBlue] (rpr) at (0.5,-4.8) {peer\_review.cairo};
+\node[mod=clBlue] (rpr) at (0.5,-5.2) {peer\_review.cairo};
 \node[mod=clBlue, below=2pt of rpr] (rmeth) {methodology.cairo};
 \begin{pgfonlayer}{background}
   \node[grpbox=clBlue, fit=(rpr)(rmeth), label={[lbl,text=clBlue]below:research/}] (resmod) {};
 \end{pgfonlayer}
 
-\node[mod=clRed] (tvalid) at (-2.5,-4.8) {validator.cairo};
+\node[mod=clRed] (tvalid) at (-2.5,-5.2) {validator.cairo};
 \node[mod=clRed, below=2pt of tvalid] (taudit) {auditor.cairo};
 \node[mod=clRed, below=2pt of taudit] (tgovern) {governor.cairo};
 \begin{pgfonlayer}{background}
@@ -77,8 +77,13 @@
   \node[grpbox=clGreen, fit=(msust)(manal), label={[lbl,text=clGreen]below:metrics/}] (metmod) {};
 \end{pgfonlayer}
 
+\coordinate (cairomod_bottom) at ([yshift=-12pt]triadmod.south);
+\begin{pgfonlayer}{background}
+  \node[draw=black!50, dotted, line width=0.8pt, rounded corners=6pt, inner sep=8pt, fit=(coremod)(triadmod)(resmod)(socmod)(metmod)(cairomod_bottom)] (cairomods) {};
+\end{pgfonlayer}
+
 %% ── Row 4 ──────────────────────────────────────────────────────────────────
-\node[mod=clPurple] (dind) at (0, -7.6) {Industry};
+\node[mod=clPurple] (dind) at (0, -8.8) {Industry};
 \node[mod=clPurple, left=0.4cm of dind]  (dwat) {Water};
 \node[mod=clPurple, left=0.4cm of dwat]  (dhc)  {Healthcare};
 \node[mod=clPurple, right=0.4cm of dind] (dedu) {Education};
@@ -88,7 +93,7 @@
 \end{pgfonlayer}
 
 %% ── Row 5 ──────────────────────────────────────────────────────────────────
-\node[mod=clGold] (sdggsi)  at (0, -9.4) {Green Stature (SDG 12)};
+\node[mod=clGold] (sdggsi)  at (0, -10.6) {Green Stature (SDG 12)};
 \node[mod=clGold, left=1.0cm of sdggsi]  (sdgdri)  {DRI (SDG 10)};
 \node[mod=clGold, right=1.0cm of sdggsi] (sdgfate) {FATE Score (SDG 16)};
 \begin{pgfonlayer}{background}
@@ -134,6 +139,8 @@
 \draw[darr] ([yshift=4pt]registry.west) -- ([yshift=4pt]daemon.east);
 \draw[arr] ([yshift=-4pt]daemon.east) -- ([yshift=-4pt]registry.west);
 \draw[arr] (daemon) -- (prover);
+
+\node[lbl, text=black, anchor=south, yshift=4pt] at (cairomods.south) {Cairo Modules};
 
 \end{tikzpicture}
 \end{adjustbox}
