@@ -118,6 +118,13 @@ pub fn calculate_weighted_vote(votes: u64, weight: u16) -> u64 {
     (votes * weight.into()) / 100
 }
 
+pub const MAX_WEIGHT_PERCENT: u16 = 33;
+
+pub fn is_weight_within_limit(new_weight: u16, total_potential_weight: u64) -> bool {
+    new_weight.into() * 100 <= total_potential_weight * MAX_WEIGHT_PERCENT.into()
+}
+
+
 pub fn check_veto_expiry(veto_block: u64, current_block: u64) -> bool {
     current_block > veto_block + 5000 // Verification period 
 }

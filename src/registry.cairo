@@ -468,6 +468,14 @@ mod Registry {
             let caller = get_caller_address();
             assert_is_authority(self.authorities.read(caller));
             
+            let n = self.authority_count.read();
+            let total_potential_weight = n * 100; 
+
+            // Prevent centralization in networks with at least 4 nodes (BFT bounds)
+            if n >= 4 {
+                assert(epicue_core::triad::governor::is_weight_within_limit(new_weight, total_potential_weight), 'Weight exceeds 33% limit');
+            }
+
             let id = self.proposal_count.read() + 1;
             let mut proposer_weight = self.authority_weights.read(caller);
             if proposer_weight == 0 { proposer_weight = 100; }
@@ -485,9 +493,8 @@ mod Registry {
             };
             
             // Auto-finalize if quorum reached (e.g. n=1)
-            let n = self.authority_count.read();
-            let total_potential_weight = n * 100; 
             let weighted_threshold = (total_potential_weight / 2) + 1;
+
 
             if proposal.votes_for >= weighted_threshold {
                 proposal.status = proposal_status::APPROVED;

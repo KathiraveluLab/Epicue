@@ -26,6 +26,7 @@ _bmad
 .cursor
 .vscode
 _paper
+_presentation
 
 # Scarb / Starknet Foundry build artifacts
 .snfoundry_cache

@@ -113,3 +113,46 @@ fn test_weighted_voting_flow() {
     let proposal = dispatcher.get_proposal(prop2);
     assert(proposal.status == proposal_status::APPROVED, 'Should be auto-approved');
 }
+
+#[test]
+#[should_panic(expected: ('Weight exceeds 33% limit', ))]
+fn test_weight_upperbound_centralization() {
+    let auth1: ContractAddress = 0x111.try_into().unwrap();
+    let auth2: ContractAddress = 0x222.try_into().unwrap();
+    let auth3: ContractAddress = 0x333.try_into().unwrap();
+    let auth4: ContractAddress = 0x444.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+
+    // 1. Add Auth2 (n=1 -> n=2)
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    let p2 = dispatcher.propose_action(auth2, actions::ADD_AUTHORITY);
+    dispatcher.execute_proposal(p2);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    // 2. Add Auth3 (n=2 -> n=3)
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    let p3 = dispatcher.propose_action(auth3, actions::ADD_AUTHORITY);
+    stop_cheat_caller_address(dispatcher.contract_address);
+    
+    start_cheat_caller_address(dispatcher.contract_address, auth2);
+    dispatcher.vote_on_proposal(p3, true);
+    stop_cheat_caller_address(dispatcher.contract_address);
+    dispatcher.execute_proposal(p3);
+
+    // 3. Add Auth4 (n=3 -> n=4)
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    let p4 = dispatcher.propose_action(auth4, actions::ADD_AUTHORITY);
+    stop_cheat_caller_address(dispatcher.contract_address);
+    
+    start_cheat_caller_address(dispatcher.contract_address, auth2);
+    dispatcher.vote_on_proposal(p4, true);
+    stop_cheat_caller_address(dispatcher.contract_address);
+    dispatcher.execute_proposal(p4);
+
+    // 4. Auth1 proposes weight of 200 (which exceeds 33% of 400 total potential weight = 132)
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    dispatcher.propose_weight_action(auth1, 200);
+    stop_cheat_caller_address(dispatcher.contract_address);
+}
+
+
