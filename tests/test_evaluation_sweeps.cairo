@@ -101,14 +101,13 @@ fn test_authority_scaling_sweep() {
 }
 
 #[test]
-fn test_semantic_domain_validation_comparison() {
+fn test_submit_geology_gas() {
     let auth1: ContractAddress = 0x101.try_into().unwrap();
     let dispatcher = deploy_registry(auth1);
 
-    // 1. Submit Geological Record (with geospatial coordinates validation)
     let geo_record = GeologicalRecord {
         subject_id: 0x201,
-        latitude: 4100, // inside Research Zone Alpha
+        latitude: 4100,
         longitude: -7400,
         sample_depth: 600,
         mineral_density: 700,
@@ -121,8 +120,13 @@ fn test_semantic_domain_validation_comparison() {
 
     let saved_geo = dispatcher.get_geological_record(0x201);
     assert(saved_geo.latitude == 4100, 'Geological record mismatch');
+}
 
-    // 2. Submit Water Record
+#[test]
+fn test_submit_water_gas() {
+    let auth1: ContractAddress = 0x101.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+
     let water_record = WaterRecord {
         subject_id: 0x202,
         potability_ppm: 250,
@@ -136,8 +140,13 @@ fn test_semantic_domain_validation_comparison() {
 
     let saved_water = dispatcher.get_water_record(0x202);
     assert(saved_water.ph_level == 740, 'Water record mismatch');
+}
 
-    // 3. Submit Industrial Record
+#[test]
+fn test_submit_industry_gas() {
+    let auth1: ContractAddress = 0x101.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+
     let ind_record = IndustrialRecord {
         subject_id: 0x203,
         carbon_emissions_tons: 350,
@@ -151,8 +160,13 @@ fn test_semantic_domain_validation_comparison() {
 
     let saved_ind = dispatcher.get_industrial_record(0x203);
     assert(saved_ind.carbon_emissions_tons == 350, 'Industrial record mismatch');
+}
 
-    // 4. Submit Education Record
+#[test]
+fn test_submit_education_gas() {
+    let auth1: ContractAddress = 0x101.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+
     let edu_record = EducationRecord {
         subject_id: 0x204,
         integrity_index: 92,
