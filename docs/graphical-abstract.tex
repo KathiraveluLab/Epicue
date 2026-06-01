@@ -28,10 +28,11 @@
 ]
 
 %% ── Row 0 ──────────────────────────────────────────────────────────────────
-\node[layer=clBlue] (portal) at (-1.5,0) {Vite Portal};
-\node[layer=clBlue] (cli)    at (1.5,0)  {CLI / Scripts};
+\node[layer=clBlue] (portal) at (-2.0,0.3) {Vite Portal};
+\node[layer=clBlue] (cli)    at (-2.0,-0.3) {CLI / Scripts};
+\node[layer=clBlue] (ipfs)   at (2.0,0) {Local IPFS Node};
 \begin{pgfonlayer}{background}
-  \node[grpbox=clBlue, fit=(portal)(cli), label={[lbl,text=clBlue]above:Client Layer}] (clients) {};
+  \node[grpbox=clBlue, fit=(portal)(cli)(ipfs), label={[lbl,text=clBlue]above:Client Layer}] (clients) {};
 \end{pgfonlayer}
 
 %% ── Row 1 ──────────────────────────────────────────────────────────────────
@@ -115,6 +116,8 @@
 \end{pgfonlayer}
 
 %% ── Edges ──────────────────────────────────────────────────────────────────
+\draw[arr] (portal) -- (ipfs);
+\draw[arr] (cli) -- (ipfs);
 \draw[arr] (portal) -- (registry);
 \draw[arr] (cli) -- (registry);
 \draw[arr] (registry) -- (validator);
@@ -128,7 +131,7 @@
 \draw[arr] (governor) -- (metmod.north);
 \draw[arr] (governor) -- (triadmod.north);
 
-\draw[arr] (domains.west) -- ++(-1.2,0) |- (-2.2,-0.7) |- ([xshift=6pt]registry.north west);
+\draw[arr] (domains.west) -- ++(-1.1,0) |- (-2.2,-1.0) |- ([xshift=6pt]registry.north west);
 \draw[arr] (domains.south -| dhc) -- (sdgdri);
 \draw[arr] (domains.south -| dedu) -- (sdgdri);
 \draw[arr] (domains.south -| dwat) -- (sdggsi);
