@@ -56,6 +56,53 @@ else
     fi
 fi
 
+# 5. Check and Setup IPFS
+echo "--- Configuring IPFS ---"
+export IPFS_PATH="$(pwd)/.ipfs"
+
+if command -v ipfs &> /dev/null; then
+    IPFS_CMD="ipfs"
+    echo "Global IPFS installation found: $(ipfs --version)"
+elif [ -f "./bin/ipfs" ]; then
+    IPFS_CMD="./bin/ipfs"
+    echo "Local IPFS binary found: $(./bin/ipfs --version)"
+else
+    echo "No IPFS installation found. Downloading Kubo (Go-IPFS) locally..."
+    mkdir -p bin
+    ARCH=$(uname -m)
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    if [ "$ARCH" = "x86_64" ]; then
+        ARCH="amd64"
+    elif [ "$ARCH" = "aarch64" ]; then
+        ARCH="arm64"
+    fi
+    
+    KUBO_VERSION="0.29.0"
+    TAR_NAME="kubo_v${KUBO_VERSION}_${OS}-${ARCH}.tar.gz"
+    DOWNLOAD_URL="https://dist.ipfs.tech/kubo/v${KUBO_VERSION}/${TAR_NAME}"
+    
+    echo "Downloading from $DOWNLOAD_URL..."
+    if command -v curl &> /dev/null; then
+        curl -L -o "$TAR_NAME" "$DOWNLOAD_URL"
+    elif command -v wget &> /dev/null; then
+        wget -O "$TAR_NAME" "$DOWNLOAD_URL"
+    else
+        echo "Error: Neither curl nor wget is installed. Cannot download IPFS."
+        exit 1
+    fi
+    
+    tar -xzf "$TAR_NAME"
+    mv kubo/ipfs bin/
+    rm -rf kubo "$TAR_NAME"
+    IPFS_CMD="./bin/ipfs"
+    echo "Local IPFS binary installed successfully."
+fi
+
+if [ ! -d ".ipfs" ]; then
+    echo "Initializing local IPFS repository..."
+    $IPFS_CMD init
+fi
+
 echo "--- Building Epicue Framework ---"
 scarb build
 

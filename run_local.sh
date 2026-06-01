@@ -1,11 +1,21 @@
 #!/bin/bash
 
-# Epicue Local Development Orchestrator
-# Boots local devnet, deploys the Registry, populates test data, and runs portal/daemon.
+export IPFS_PATH="$(pwd)/.ipfs"
 
-echo "--- Booting Epicue Local Environment ---"
+# 1. Start Local IPFS Daemon in the background
+echo "[*] Starting IPFS Daemon..."
+if [ -f "./bin/ipfs" ]; then
+    IPFS_CMD="./bin/ipfs"
+elif command -v ipfs &> /dev/null; then
+    IPFS_CMD="ipfs"
+else
+    echo "Error: IPFS is not installed. Please run ./setup.sh first."
+    exit 1
+fi
+$IPFS_CMD daemon > ipfs.log 2>&1 &
+IPFS_PID=$!
 
-# 1. Start Local Devnet in the background
+# 2. Start Local Devnet in the background
 echo "[*] Starting Starknet Devnet..."
 ./run_devnet.sh > devnet.log 2>&1 &
 DEVNET_PID=$!
@@ -18,6 +28,8 @@ cleanup() {
     kill $DAEMON_PID 2>/dev/null || true
     echo "[*] Terminating Starknet Devnet..."
     kill $DEVNET_PID 2>/dev/null || true
+    echo "[*] Terminating IPFS Daemon..."
+    kill $IPFS_PID 2>/dev/null || true
     exit 0
 }
 

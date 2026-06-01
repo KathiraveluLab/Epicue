@@ -47,20 +47,20 @@ Epicue translates UN Sustainable Development Goals (SDGs) into STARK-proven metr
 ## Getting Started
 
 ### Project Setup
-Initialize the environment, install dependencies, and run initial verification (build & test):
+Initialize the environment, install dependencies, and run initial verification. The setup script will automatically detect your OS/architecture, download the Kubo (IPFS) binary locally, and initialize an isolated IPFS repository at `.ipfs/` in the workspace:
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
 ### Local Development
-To run the entire local development stack (Starknet Devnet, contract deployment, test data population, the ZK Coprocessor daemon, and the Web Portal) with a single command:
+To run the entire local development stack (Starknet Devnet, local IPFS Daemon, contract deployment, test data population, the ZK Coprocessor daemon, and the Web Portal) with a single command:
 ```bash
 ./run_local.sh
 ```
 The portal will be available at `http://localhost:3001`.
 
-This script will start the background servers and launch the web portal. To shut down all services cleanly, simply press `Ctrl+C` in the terminal window.
+This script starts all required background processes (including the isolated IPFS node) and launches the portal. To shut down all services cleanly, simply press `Ctrl+C` in the terminal window.
 
 ### Public Network / Decoupled Deployment
 To connect the stack to a public Starknet network (e.g. Sepolia testnet or Mainnet):

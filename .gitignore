@@ -64,6 +64,8 @@ portal/.env.local
 # Compiled C++ Binaries for Stone Prover
 bin/cpu_air_prover
 bin/cpu_air_verifier
+bin/ipfs
+.ipfs/
 
 # Cairo compilation and VM execution artifacts
 daemon/*_compiled.json
