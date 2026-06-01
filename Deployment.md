@@ -59,5 +59,17 @@ The portal will be accessible at `http://localhost:3001`.
 - **Address Privacy**: Avoid hardcoding `CONTRACT_ADDRESS` in the source code; always prefer the `VITE_` prefixed environment variables.
 - **Administrative Lock**: Upon deployment, the Registry is immediately locked to the decentralized Governor. All subsequent administrative actions must pass through a governance vote.
 
+## Deployment Topology: Thin-Client vs. Institutional Host
+
+To scale effectively across multiple organizations, Epicue isolates user interface actions from backend node infrastructure:
+
+### 1. Researcher / Reviewer (Thin-Client)
+* **Software**: Web browser (accessing the Vite Portal) + Starknet browser wallet (Argent X or Braavos).
+* **Requirements**: Zero local installation. Individual researchers/reviewers use their existing browser wallets to sign transactions (e.g., submitting peer reviews, onboarding members, or claiming bounties) without running any node backend locally.
+
+### 2. Institutional Node (Host Infrastructure)
+* **Software**: Local IPFS Daemon, Erlang Anomaly Detection Daemon, and Cairo/Stone Prover.
+* **Requirements**: Deployed centrally on institutional servers (or shared cloud environments). This backend coordinates connection to the Starknet RPC endpoints, persists large files (like guideline documents) in IPFS, and handles continuous, off-chain anomaly monitoring.
+
 ---
 *For more information, see the [README](README.md).*
