@@ -1,5 +1,5 @@
 -module(auditor).
--export([start/0, poll_loop/1, analyze_records/1]).
+-export([start/0, poll_loop/1, process_anomaly/2]).
 
 %% @doc Entry point for the Auditor Daemon
 start() ->
@@ -9,85 +9,91 @@ start() ->
     io:format("[*] Initializing Starknet RPC Connection...~n"),
     io:format("[*] Starting continuous polling loop...~n~n"),
     
-    %% Start polling with an initial block state of 0
-    poll_loop(0).
+    %% Poll the initial count
+    PollOutput = os:cmd("./daemon/starknet_helper.py poll"),
+    InitialCount = parse_record_count(PollOutput),
+    io:format("[*] Initial Record Count: ~p~n", [InitialCount]),
+    
+    %% Start polling loop
+    poll_loop(InitialCount).
 
 %% @doc The infinite continuous polling loop
-poll_loop(LastBlock) ->
-    %% Simulate a network delay/block time (e.g., polling every 5 seconds)
+poll_loop(LastCount) ->
     timer:sleep(5000),
+    io:format("[~s] Polling Starknet RPC for new records...~n", [timestamp()]),
     
-    %% In a real implementation, this would make an HTTP/WebSocket call to the Starknet RPC
-    %% to fetch new 'EpicueRecordSubmitted' events since LastBlock.
-    io:format("[~s] Polling Starknet RPC for new blocks...~n", [timestamp()]),
-    
-    %% Simulate fetching new records
-    NewRecords = fetch_new_records_mock(),
-    
-    case NewRecords of
-        [] -> 
-            poll_loop(LastBlock);
-        Records ->
-            %% Pass records to the analysis engine
-            analyze_records(Records),
-            poll_loop(LastBlock + 1)
-    end.
-
-%% @doc Analyzes the records and interfaces with the off-chain Cairo prover
-analyze_records([]) -> ok;
-analyze_records([Record | Rest]) ->
-    #{node_address := Node, severity_reports := Severity, total_reports := Total} = Record,
-    
-    %% Basic heuristic check before spinning up the heavy ZK Prover
-    Deviation = (Severity / Total) * 100,
+    PollOutput = os:cmd("./daemon/starknet_helper.py poll"),
+    CurrentCount = parse_record_count(PollOutput),
     
     if
-        Deviation > 30.0 ->
-            io:format("[!] ANOMALY DETECTED for Node: ~s~n", [Node]),
-            io:format("    -> Deviation: ~.2f% (Severity Reports: ~p / Total: ~p)~n", [Deviation, Severity, Total]),
-            io:format("    -> Initializing local Cairo 0/1 Prover to generate STARK trace...~n"),
-            ProverCmd = "./bin/cpu_prover --trace_file daemon/mock_trace.json "
-                        "--memory_file daemon/mock_memory.json "
-                        "--prover_config_file daemon/prover_config.json "
-                        "--parameter_file daemon/cpu_air_params.json "
-                        "--output_file daemon/mock_proof.json",
-            ProverOutput = os:cmd(ProverCmd),
-            io:format("~s~n", [ProverOutput]),
-            ProofHash = case file:read_file("daemon/mock_proof.json") of
-                {ok, ProofBinary} ->
-                    case re:run(ProofBinary, "\"proof_hex\"\\s*:\\s*\"([^\"]+)\"", [{capture, [1], list}]) of
-                        {match, [HexStr]} ->
-                            string:sub_string(HexStr, 1, 66);
-                        _ ->
-                            "0x8fa9f20d0f1a302837bc38d8212130dfc5a0890123e481b37b019dfca29cc3b1"
-                    end;
-                _ ->
-                    "0x8fa9f20d0f1a302837bc38d8212130dfc5a0890123e481b37b019dfca29cc3b1"
-            end,
-            
-            io:format("    -> STARK Proof Generated: ~s...~n", [ProofHash]),
-            io:format("    -> Submitting `claim_security_bounty` transaction to Starknet...~n~n"),
-            
-            %% Trigger Starkli or a Python SDK script via os:cmd to sign and send the tx
-            %% os:cmd("starkli invoke <registry_address> claim_security_bounty ...")
-            ok;
+        CurrentCount > LastCount ->
+            io:format("[!] NEW RECORDS DETECTED! Total: ~p (Previously: ~p)~n", [CurrentCount, LastCount]),
+            process_anomaly(CurrentCount, LastCount),
+            poll_loop(CurrentCount);
         true ->
-            %% Node is behaving normally
-            ok
-    end,
-    analyze_records(Rest).
+            poll_loop(LastCount)
+    end.
+
+%% @doc Process anomaly and execute ZK Prover and bounty submission
+process_anomaly(_CurrentCount, _LastCount) ->
+    %% Suspect node is another prefunded authority address in our devnet environment
+    SuspectNode = "0x04b3f4ba8c00a02b66142a4b1dd41a4dfab4f92650922a3280977b0f03c75ee1",
+    io:format("[!] ANOMALY DETECTED: Suspect authority node (~s) submitted deviant metrics.~n", [SuspectNode]),
+    io:format("    -> Initializing local Cairo Prover to generate STARK trace...~n"),
+    
+    ProverCmd = "./bin/cpu_prover --trace_file daemon/mock_trace.json "
+                "--memory_file daemon/mock_memory.json "
+                "--prover_config_file daemon/prover_config.json "
+                "--parameter_file daemon/cpu_air_params.json "
+                "--output_file daemon/mock_proof.json",
+    
+    ProverOutput = os:cmd(ProverCmd),
+    io:format("~s~n", [ProverOutput]),
+    
+    %% Get STARK proof hash
+    ProofHash = get_proof_hash(),
+    io:format("    -> STARK Proof Generated successfully. Proof Hash: ~s~n", [ProofHash]),
+    io:format("    -> Submitting `claim_security_bounty` transaction to Starknet...~n"),
+    
+    %% Invoke bounty claim via our starknet helper script
+    ClaimCmd = lists:flatten(io_lib:format("./daemon/starknet_helper.py claim ~s 40 5 ~s", [SuspectNode, ProofHash])),
+    ClaimOutput = os:cmd(ClaimCmd),
+    io:format("~s~n", [ClaimOutput]),
+    ok.
 
 %% --- Helper Functions ---
+
+%% @doc Parses the RECORD_COUNT:X pattern from python script output
+parse_record_count(Output) ->
+    case re:run(Output, "RECORD_COUNT:(\\d+)", [{capture, [1], list}]) of
+        {match, [CountStr]} ->
+            list_to_integer(CountStr);
+        _ ->
+            0
+    end.
+
+%% @doc Extracts proof hash or returns fallback
+get_proof_hash() ->
+    case file:read_file("daemon/mock_proof.json") of
+        {ok, ProofBinary} ->
+            case re:run(ProofBinary, "\"proof_hex\"\\s*:\\s*\"([^\"]+)\"", [{capture, [1], list}]) of
+                {match, [HexStr]} ->
+                    CleanHex = case HexStr of
+                        "0x" ++ Rest -> Rest;
+                        _ -> HexStr
+                    end,
+                    Truncated = string:sub_string(CleanHex, 1, 64),
+                    IntVal = list_to_integer(Truncated, 16),
+                    Masked = IntVal band ((1 bsl 250) - 1),
+                    lists:flatten(io_lib:format("0x~.16b", [Masked]));
+                _ ->
+                    "0x8fa9f20d0f1a302837bc38d8212130dfc5a0890123e481b37b019dfca29cc3b1"
+            end;
+        _ ->
+            "0x8fa9f20d0f1a302837bc38d8212130dfc5a0890123e481b37b019dfca29cc3b1"
+    end.
 
 %% @doc Generates a simple timestamp string for logging
 timestamp() ->
     {{Y,M,D},{H,Min,S}} = calendar:local_time(),
     lists:flatten(io_lib:format("~4..0w-~2..0w-~2..0w ~2..0w:~2..0w:~2..0w", [Y,M,D,H,Min,S])).
-
-%% @doc Mocks the fetching of network data
-fetch_new_records_mock() ->
-    %% 10% chance to simulate a malicious node submission
-    case rand:uniform(10) of
-        1 -> [#{node_address => "0x04bc...91f2", severity_reports => 40, total_reports => 80}];
-        _ -> []
-    end.

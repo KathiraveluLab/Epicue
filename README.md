@@ -54,18 +54,27 @@ chmod +x setup.sh
 ```
 
 ### Local Development
-To run a local Starknet node for development:
+To run the entire local development stack (Starknet Devnet, contract deployment, test data population, the ZK Coprocessor daemon, and the Web Portal) with a single command:
 ```bash
-./run_devnet.sh
-```
-Keep this running in a separate terminal while deploying.
-
-### Digital Portal
-To start the institutional interface:
-```bash
-./run_portal.sh
+./run_local.sh
 ```
 The portal will be available at `http://localhost:3001`.
+
+This script will start the background servers and launch the web portal. To shut down all services cleanly, simply press `Ctrl+C` in the terminal window.
+
+### Public Network / Decoupled Deployment
+To connect the stack to a public Starknet network (e.g. Sepolia testnet or Mainnet):
+1. **Configure and deploy**:
+   ```bash
+   cp deployment/sepolia.env.template deployment/.env
+   # Edit deployment/.env with your RPC URL, account address, and keystore path
+   ./deployment/deploy_sepolia.sh
+   ```
+2. **Start the portal and daemon**:
+   ```bash
+   ./run_public.sh
+   ```
+   The portal will be available at `http://localhost:3001` and is connected to the public Starknet network contract. To shut down cleanly, simply press `Ctrl+C`.
 
 ### Detailed Walkthrough
 See the [Tutorial Guide](Tutorial.md) for a step-by-step walkthrough of institutional features.

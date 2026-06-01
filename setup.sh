@@ -70,7 +70,6 @@ if [ -d "portal" ]; then
 fi
 
 echo "--- Setup Complete ---"
-echo "The environment is ready. To deploy locally:"
-echo "1. In one terminal, run: './run_devnet.sh'"
-echo "2. In another terminal, run: './deployment/deploy.sh'"
-echo "3. Finally, start the UI: './run_portal.sh'"
+echo "The environment is ready. To run the local stack:"
+echo "Run: './run_local.sh'"
+

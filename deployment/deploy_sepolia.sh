@@ -35,6 +35,13 @@ echo "--- Deploying Registry to Sepolia ---"
 STARKLI_DEPLOY_OUT=$(starkli deploy "$CLASS_HASH" "$STARKNET_ACCOUNT" --watch)
 CONTRACT_ADDRESS=$(echo "$STARKLI_DEPLOY_OUT" | grep "Contract deployed at:" | awk '{print $4}')
 
+# Update portal config
+if [ -d "portal" ]; then
+    echo "Updating portal/.env.local..."
+    echo "VITE_REGISTRY_ADDRESS=$CONTRACT_ADDRESS" > portal/.env.local
+    echo "VITE_STARKNET_RPC=$STARKNET_RPC" >> portal/.env.local
+fi
+
 echo "--------------------------------------------------"
 echo "Epicue Registry Deployed Successfully!"
 echo "Address: $CONTRACT_ADDRESS"
