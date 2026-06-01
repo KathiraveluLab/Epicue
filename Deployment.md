@@ -66,6 +66,10 @@ To scale effectively across multiple organizations, Epicue isolates user interfa
 ### 1. Researcher / Reviewer (Thin-Client)
 * **Software**: Web browser (accessing the Vite Portal) + Starknet browser wallet (Argent X or Braavos).
 * **Requirements**: Zero local installation. Individual researchers/reviewers use their existing browser wallets to sign transactions (e.g., submitting peer reviews, onboarding members, or claiming bounties) without running any node backend locally.
+* **Local Wallet Setup**: Run the custom configuration script to retrieve the exact local Devnet network parameters and pre-funded private keys to import into your browser extension:
+  ```bash
+  ./bin/configure_wallet.sh
+  ```
 
 ### 2. Institutional Node (Host Infrastructure)
 * **Software**: Local IPFS Daemon, Erlang Anomaly Detection Daemon, and Cairo/Stone Prover.
