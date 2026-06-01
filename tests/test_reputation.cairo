@@ -118,3 +118,50 @@ fn test_reputation_floor_enforcement() {
     let decayed_rep = dispatcher.get_institution_reputation(auth).reputation_credits;
     assert(decayed_rep == 40, 'Reputation fell below floor');
 }
+
+#[test]
+fn test_member_onboarding_and_promotion() {
+    let auth: ContractAddress = 0x111.try_into().unwrap();
+    let dispatcher = deploy_registry(auth);
+
+    let researcher: ContractAddress = 0x222.try_into().unwrap();
+
+    // 1. Initial state: not a member, role is 0
+    assert(!dispatcher.is_member(researcher), 'Should not be member initially');
+    assert(dispatcher.get_member_role(researcher) == 0, 'Role should be 0');
+
+    // 2. Register member
+    start_cheat_caller_address(dispatcher.contract_address, auth);
+    dispatcher.register_member(researcher, 'researcher');
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    // 3. Verify registration
+    assert(dispatcher.is_member(researcher), 'Should be member');
+    assert(dispatcher.get_member_role(researcher) == 'researcher', 'Role should be researcher');
+
+    // 4. Promote member
+    start_cheat_caller_address(dispatcher.contract_address, auth);
+    dispatcher.promote_researcher(researcher);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    // 5. Verify promotion
+    assert(dispatcher.get_member_role(researcher) == 'senior_researcher', 'Should be senior_researcher');
+}
+
+#[test]
+#[should_panic(expected: ('Unauthorized promotion',))]
+fn test_member_unauthorized_promotion() {
+    let auth: ContractAddress = 0x111.try_into().unwrap();
+    let dispatcher = deploy_registry(auth);
+
+    let researcher: ContractAddress = 0x222.try_into().unwrap();
+    let unauthorized: ContractAddress = 0x333.try_into().unwrap();
+
+    start_cheat_caller_address(dispatcher.contract_address, auth);
+    dispatcher.register_member(researcher, 'researcher');
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    // Try to promote from unauthorized caller
+    start_cheat_caller_address(dispatcher.contract_address, unauthorized);
+    dispatcher.promote_researcher(researcher);
+}

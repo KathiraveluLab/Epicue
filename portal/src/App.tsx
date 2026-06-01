@@ -35,6 +35,14 @@ function decodeShortString(felt: string): string {
   }
 }
 
+function stringToFelt(str: string): string {
+  let hex = '';
+  for (let i = 0; i < str.length; i++) {
+    hex += str.charCodeAt(i).toString(16);
+  }
+  return '0x' + hex;
+}
+
 // --- Error Boundary ---
 class ErrorBoundary extends Component<any, any> {
   constructor(props: any) {
@@ -374,6 +382,32 @@ function NewProposalModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
 
 function RegistrySection() {
   const [displayLimit, setDisplayLimit] = useState(5);
+  const [memberAddress, setMemberAddress] = useState('');
+  const [memberRole, setMemberRole] = useState('researcher');
+  const [promoteAddress, setPromoteAddress] = useState('');
+
+  const roleFelt = stringToFelt(memberRole);
+
+  const { send: registerMember, isPending: isRegistering } = useSendTransaction({
+    calls: [
+      {
+        contractAddress: CONTRACT_ADDRESS as `0x${string}`,
+        entrypoint: 'register_member',
+        calldata: [memberAddress, roleFelt],
+      }
+    ]
+  });
+
+  const { send: promoteResearcher, isPending: isPromoting } = useSendTransaction({
+    calls: [
+      {
+        contractAddress: CONTRACT_ADDRESS as `0x${string}`,
+        entrypoint: 'promote_researcher',
+        calldata: [promoteAddress],
+      }
+    ]
+  });
+
   const { data: countRaw } = useReadContract({
     abi: CONTRACT_ABI,
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -501,6 +535,83 @@ function RegistrySection() {
           ) : (
             <div className="text-center py-12 text-slate-400 italic">No transmissions found on-chain.</div>
           )}
+        </div>
+      </div>
+
+      {/* Institutional Member Administration */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Onboard New Member Card */}
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+            <User className="w-24 h-24 text-slate-900" />
+          </div>
+          <h3 className="text-xl font-bold mb-2 text-slate-900 font-sans">Onboard Institutional Member</h3>
+          <p className="text-slate-500 text-sm mb-6 font-medium">Register a researcher or auditor under your authority node.</p>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Member Wallet Address</label>
+              <input 
+                type="text" 
+                value={memberAddress}
+                onChange={(e) => setMemberAddress(e.target.value)}
+                placeholder="0x..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-violet-500/50 font-mono"
+              />
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Role</label>
+              <select 
+                value={memberRole}
+                onChange={(e) => setMemberRole(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-violet-500/50"
+              >
+                <option value="researcher">Researcher / Reviewer</option>
+                <option value="auditor">Institutional Auditor</option>
+              </select>
+            </div>
+
+            <button 
+              onClick={() => registerMember()}
+              disabled={isRegistering || !memberAddress}
+              className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm transition-all shadow-lg shadow-violet-500/20 active:scale-95 disabled:opacity-50 disabled:grayscale"
+            >
+              {isRegistering ? 'Registering...' : 'Onboard Member'}
+            </button>
+          </div>
+        </div>
+
+        {/* Promote Researcher Card */}
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+            <ShieldCheck className="w-24 h-24 text-slate-900" />
+          </div>
+          <h3 className="text-xl font-bold mb-2 text-slate-900 font-sans">Promote to Senior Researcher</h3>
+          <p className="text-slate-500 text-sm mb-6 font-medium">Elevate a compliant researcher to Senior status to resolve disputes.</p>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Researcher Wallet Address</label>
+              <input 
+                type="text" 
+                value={promoteAddress}
+                onChange={(e) => setPromoteAddress(e.target.value)}
+                placeholder="0x..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-violet-500/50 font-mono"
+              />
+            </div>
+
+            <div className="pt-[72px]">
+              <button 
+                onClick={() => promoteResearcher()}
+                disabled={isPromoting || !promoteAddress}
+                className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50 disabled:grayscale"
+              >
+                {isPromoting ? 'Promoting...' : 'Promote to Senior'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

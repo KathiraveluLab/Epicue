@@ -112,6 +112,10 @@ use starknet::ContractAddress;
     fn get_reputation_floor(self: @TContractState) -> u64;
     fn get_record_id(self: @TContractState, index: u64) -> felt252;
     fn endorse_methodology(ref self: TContractState, id: u64);
+    fn register_member(ref self: TContractState, member: ContractAddress, role: felt252);
+    fn is_member(self: @TContractState, address: ContractAddress) -> bool;
+    fn get_member_role(self: @TContractState, address: ContractAddress) -> felt252;
+    fn promote_researcher(ref self: TContractState, researcher: ContractAddress);
 }
 
 // ──────────────────────────────────────────────
@@ -123,6 +127,7 @@ mod Registry {
     use super::{EpicueRecord, HealthRecord, domains, WaterRecord, IndustrialRecord, EducationRecord};
     use epicue_core::core::access::assert_is_authority;
     use epicue_core::social::advocate::{Advocate};
+    use epicue_core::social::institutional::{InstitutionalMember, validate_member_role};
     use epicue_core::social::reputation::{
         InstitutionReputation, calculate_credit_gain, calculate_bounty_reward,
         apply_graded_slashing, apply_reputation_decay, update_spatiotemporal_trust,
@@ -211,6 +216,8 @@ mod Registry {
         // Methodology BFT Quorum Storage
         methodology_endorsements: Map<(u64, ContractAddress), bool>,
         methodology_endorsement_counts: Map<u64, u64>,
+        // Member Registry
+        members: Map<ContractAddress, InstitutionalMember>,
     }
 
     // ── Events ─────────────────────────────────
@@ -1118,6 +1125,52 @@ mod Registry {
             self.methodology_endorsements.write((id, caller), true);
             let current = self.methodology_endorsement_counts.read(id);
             self.methodology_endorsement_counts.write(id, current + 1);
+        }
+
+        fn register_member(ref self: ContractState, member: ContractAddress, role: felt252) {
+            let caller = get_caller_address();
+            assert_is_authority(self.authorities.read(caller));
+            assert(validate_member_role(role), 'Invalid member role');
+            
+            let caller_felt: felt252 = caller.into();
+            let new_member = InstitutionalMember {
+                address: member,
+                institution_id: caller_felt,
+                role: role,
+                active: true,
+            };
+            self.members.write(member, new_member);
+        }
+
+        fn is_member(self: @ContractState, address: ContractAddress) -> bool {
+            self.members.read(address).active
+        }
+
+        fn get_member_role(self: @ContractState, address: ContractAddress) -> felt252 {
+            let m = self.members.read(address);
+            if m.active {
+                m.role
+            } else {
+                0
+            }
+        }
+
+        fn promote_researcher(ref self: ContractState, researcher: ContractAddress) {
+            let caller = get_caller_address();
+            let m = self.members.read(researcher);
+            assert(m.active, 'Member not active');
+            assert(m.role == 'researcher', 'Not a researcher');
+            
+            // Only the parent institution or the contract governor (self) can promote
+            assert(caller.into() == m.institution_id || caller == starknet::get_contract_address(), 'Unauthorized promotion');
+            
+            let updated_member = InstitutionalMember {
+                address: m.address,
+                institution_id: m.institution_id,
+                role: 'senior_researcher',
+                active: m.active,
+            };
+            self.members.write(researcher, updated_member);
         }
     }
 

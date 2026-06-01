@@ -179,6 +179,37 @@ export const CONTRACT_ABI = [
         outputs: [],
         state_mutability: "external",
       },
+      {
+        type: "function",
+        name: "register_member",
+        inputs: [
+          { name: "member", type: "core::starknet::contract_address::ContractAddress" },
+          { name: "role", type: "core::felt252" }
+        ],
+        outputs: [],
+        state_mutability: "external",
+      },
+      {
+        type: "function",
+        name: "is_member",
+        inputs: [{ name: "address", type: "core::starknet::contract_address::ContractAddress" }],
+        outputs: [{ type: "core::bool" }],
+        state_mutability: "view",
+      },
+      {
+        type: "function",
+        name: "get_member_role",
+        inputs: [{ name: "address", type: "core::starknet::contract_address::ContractAddress" }],
+        outputs: [{ type: "core::felt252" }],
+        state_mutability: "view",
+      },
+      {
+        type: "function",
+        name: "promote_researcher",
+        inputs: [{ name: "researcher", type: "core::starknet::contract_address::ContractAddress" }],
+        outputs: [],
+        state_mutability: "external",
+      },
     ],
   },
 ] as const;
