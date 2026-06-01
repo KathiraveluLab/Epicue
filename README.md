@@ -77,17 +77,17 @@ To connect the stack to a public Starknet network (e.g. Sepolia testnet or Mainn
    The portal will be available at `http://localhost:3001` and is connected to the public Starknet network contract. To shut down cleanly, simply press `Ctrl+C`.
 
 ### Detailed Walkthrough
-See the [Tutorial Guide](Tutorial.md) for a step-by-step walkthrough of institutional features.
+See the [Tutorial Guide](docs/Tutorial.md) for a step-by-step walkthrough of institutional features.
 
 ### Verifiable Use Cases
-See the [Verifiable Use Cases Guide](UseCases.md) for a detailed technical description of the domain-specific data structures and FATE alignment matrices.
+See the [Verifiable Use Cases Guide](docs/Usecases.md) for a detailed technical description of the domain-specific data structures and FATE alignment matrices.
 
 ### Evaluation & Datasets
 For the raw datasets and `snforge` simulation logs utilized for the manuscript evaluation, please see the [Evaluation Datasets](data/README.md). All artifacts contained within were derived directly from local test executions.
 
 ### Deployment
 
-Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Architecture](docs/README.md) for a detailed graphical overview and instructions.
+Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Guide](docs/Deployment.md) or the [Deployment Architecture](docs/README.md) for a detailed graphical overview and instructions.
 
 1. **Configure Environment**: Choose your target.
    ```bash

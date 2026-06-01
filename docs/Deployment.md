@@ -74,6 +74,3 @@ To scale effectively across multiple organizations, Epicue isolates user interfa
 ### 2. Institutional Node (Host Infrastructure)
 * **Software**: Local IPFS Daemon, Erlang Anomaly Detection Daemon, and Cairo/Stone Prover.
 * **Requirements**: Deployed centrally on institutional servers (or shared cloud environments). This backend coordinates connection to the Starknet RPC endpoints, persists large files (like guideline documents) in IPFS, and handles continuous, off-chain anomaly monitoring.
-
----
-*For more information, see the [README](README.md).*
