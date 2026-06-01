@@ -24,6 +24,7 @@ The codebase is structured into logical layers to facilitate inter-institutional
 │   ├── social/         # Equity & Inclusion (DRI, Reputation, Bounty)
 │   └── metrics/        # High-Level Analytics (Sustainability Ledger)
 ├── daemon/             # Erlang Coprocessor (Off-chain STARK Prover Host)
+├── scripts/            # Orchestration Shell Scripts (Setup, Devnet, Portal)
 ├── tests/              # Byzantine Resilience & Performance Tests
 └── portal/             # Vite Client
 ```
@@ -49,14 +50,14 @@ Epicue translates UN Sustainable Development Goals (SDGs) into STARK-proven metr
 ### Project Setup
 Initialize the environment, install dependencies, and run initial verification. The setup script will automatically detect your OS/architecture, download the Kubo (IPFS) binary locally, and initialize an isolated IPFS repository at `.ipfs/` in the workspace:
 ```bash
-chmod +x setup.sh
-./setup.sh
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 ```
 
 ### Local Development
 To run the entire local development stack (Starknet Devnet, local IPFS Daemon, contract deployment, test data population, the ZK Coprocessor daemon, and the Web Portal) with a single command:
 ```bash
-./run_local.sh
+./scripts/run_local.sh
 ```
 The portal will be available at `http://localhost:3001`.
 
@@ -72,7 +73,7 @@ To connect the stack to a public Starknet network (e.g. Sepolia testnet or Mainn
    ```
 2. **Start the portal and daemon**:
    ```bash
-   ./run_public.sh
+   ./scripts/run_public.sh
    ```
    The portal will be available at `http://localhost:3001` and is connected to the public Starknet network contract. To shut down cleanly, simply press `Ctrl+C`.
 

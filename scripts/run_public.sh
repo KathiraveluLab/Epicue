@@ -28,7 +28,7 @@ if [ -f "./bin/ipfs" ]; then
 elif command -v ipfs &> /dev/null; then
     IPFS_CMD="ipfs"
 else
-    echo "Error: IPFS is not installed. Please run ./setup.sh first."
+    echo "Error: IPFS is not installed. Please run ./scripts/setup.sh first."
     exit 1
 fi
 $IPFS_CMD daemon > ipfs.log 2>&1 &
@@ -50,9 +50,9 @@ trap cleanup INT TERM EXIT
 
 # 3. Start ZK Coprocessor Daemon in the background
 echo "[*] Starting ZK Coprocessor Daemon..."
-./run_daemon.sh > daemon.log 2>&1 &
+./scripts/run_daemon.sh > daemon.log 2>&1 &
 DAEMON_PID=$!
 
 # 4. Run Portal in the foreground
 echo "[*] Launching Portal Client..."
-./run_portal.sh
+./scripts/run_portal.sh

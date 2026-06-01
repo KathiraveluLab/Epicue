@@ -9,7 +9,7 @@ if [ -f "./bin/ipfs" ]; then
 elif command -v ipfs &> /dev/null; then
     IPFS_CMD="ipfs"
 else
-    echo "Error: IPFS is not installed. Please run ./setup.sh first."
+    echo "Error: IPFS is not installed. Please run ./scripts/setup.sh first."
     exit 1
 fi
 $IPFS_CMD daemon > ipfs.log 2>&1 &
@@ -17,7 +17,7 @@ IPFS_PID=$!
 
 # 2. Start Local Devnet in the background
 echo "[*] Starting Starknet Devnet..."
-./run_devnet.sh > devnet.log 2>&1 &
+./scripts/run_devnet.sh > devnet.log 2>&1 &
 DEVNET_PID=$!
 
 # Function to clean up background processes on exit
@@ -60,9 +60,9 @@ echo "[*] Populating Registry with test records..."
 
 # 4. Start ZK Coprocessor Daemon in the background
 echo "[*] Starting ZK Coprocessor Daemon..."
-./run_daemon.sh > daemon.log 2>&1 &
+./scripts/run_daemon.sh > daemon.log 2>&1 &
 DAEMON_PID=$!
 
 # 5. Run Portal in the foreground
 echo "[*] Launching Portal Client..."
-./run_portal.sh
+./scripts/run_portal.sh

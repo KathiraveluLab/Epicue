@@ -118,5 +118,5 @@ fi
 
 echo "--- Setup Complete ---"
 echo "The environment is ready. To run the local stack:"
-echo "Run: './run_local.sh'"
+echo "Run: './scripts/run_local.sh'"
 
