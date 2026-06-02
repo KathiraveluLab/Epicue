@@ -82,6 +82,31 @@ Navigate to the **Auditor** tab to test the system's resilience manually:
   *(Note: For this local tutorial simulation, any non-zero hex string, e.g., `0x123...`, will satisfy the on-chain assertion).*
 - Submit the **Security Signal**. If validated by the Registry, the node's reputation is slashed, and the **System Integrity** score adjusts to reflect the risk.
 
+### D. Testing Sponsored Transactions & Paymaster Console
+Epicue supports Layer 2 sponsored transactions via the custom Paymaster contract, allowing resource-constrained users or municipal auditors to submit records with zero gas costs. To test this flow manually:
+1. **Navigate to the Sponsor Tab** in the Web Portal (`http://localhost:3001`).
+2. **Fund the Paymaster (`fund_paymaster`):**
+   - Locate the **Sponsor Deposit Balance** card.
+   - Enter a Sponsor Contract Address (e.g., `0xabc...`) and the deposit amount in STRK or ETH.
+   - Click **Deposit Funds**. This transfers L2 tokens to the Paymaster contract to establish a funding pool.
+3. **Register a Sponsored User (`register_sponsored_user`):**
+   - Locate the **Register Sponsored User** card.
+   - Enter your Sponsor Address and the Target User Address (e.g., `0xdef...`) you wish to sponsor.
+   - Click **Register User**. This whitelists the target address, allowing the Paymaster contract to pay transaction fees on their behalf.
+4. **Run the Sponsored Execution Simulator:**
+   - Scroll down to the **Sponsored Execution Simulator** card.
+   - Click **Start Sponsored Transaction Simulation** to run a mock 4-step execution flow:
+     - *Step 1: Initiate Transaction:* The user sends a record submission with gas fee set to `0`.
+     - *Step 2: Validation Hook Check:* The sequencer queries the Paymaster's `validate_paymaster_transaction` hook, which returns `true` (valid/registered user).
+     - *Step 3: Deduct Gas Fee:* The sequencer executes `charge_gas_fee` against the sponsor's balance.
+     - *Step 4: Commit Record:* The record is successfully executed in the Cairo VM and committed to the registry.
+5. **Verify with Smart Contract Tests:**
+   You can also test the full Cairo smart contract validation logic programmatically using Starknet Foundry:
+   ```bash
+   snforge test test_paymaster
+   ```
+   This verifies the on-chain validation hooks, funding state mutations, and transaction rejection on insufficient balance.
+
 ---
 
 ## 4. Understanding the Scientific Metrics
