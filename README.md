@@ -1,118 +1,100 @@
-# Epicue
+# Epicue: Decentralized Multidisciplinary Governance Framework for FATE in Service Policies.
 
 **Equity, Privacy, and Integrity with Cairo in Untrusted Environments**
 
-Epicue is a Starknet-native framework designed to provide a mathematically verifiable, Byzantine-fault-tolerant registry for societal services. It ensures that public service data is handled with absolute transparency and integrity, even in the presence of malicious nodes in untrusted internet environments.
+Epicue is a Starknet-native framework designed to resolve the trust-accountability dilemma in societal service registries operating across untrusted networks. By leveraging Cairo smart contracts and off-chain Layer 2 scalability, Epicue enforces the **FATE** (Fairness, Accountability, Transparency, Ethics) principles directly within the execution layer. Rather than relying on centralized trust assumptions or expensive Layer 1 consensus, Epicue introduces an integrated, on-chain architectural engine—**the Triad**—to govern, validate, and audit public service records with mathematical finality.
 
 ---
 
-## Byzantine Fault Tolerance (BFT) & Governance
-Epicue is engineered for the untrusted Internet. Unlike typical centralized registries, Epicue incorporates **Scientific BFT Resilience** ($n=3f+1$):
-- **2f+1 Scientific Quorum**: New methodologies and research protocols require cryptographically-verified endorsements from a $2f+1$ institutional majority.
-- **Decentralized Governance Locks**: All administrative actions (authority management, reputation floors) are strictly locked behind the Epicue Governor. Modifications are only executable via successful voting proposals.
-- **Graded Byzantine Slashing**: Institutional penalties are categorized by severity (Minor, Major, Critical). Critical faults result in architectural revocation of authority.
-- **Security Bounties**: A built-in **Bounty Credit** system incentivizes specialized auditors to detect and flag Byzantine faults.
+## The Core Scientific Innovations
+
+Epicue replaces conventional, static database registries with a dynamic cryptosystem built around three primary design pillars:
+
+### 1. The Epicue Triad (Validator, Auditor, Governor)
+The registry's integrity is maintained by a collaborative set of modular pillars operating as a unified on-chain state machine:
+*   **The Validator (Integrity):** Performs synchronous geofencing and semantic validation directly inside the Cairo Virtual Machine. This ensures that every submitted record complies with localized spatial boundaries (e.g., municipal coordinates) and domain schemas without relying on external, vulnerable oracle networks.
+*   **The Auditor (Transparency):** Asynchronously monitors submitter behavior using differential analysis of the trust gradient ($\nabla S$). If a node's reputation decays rapidly or deviates from BFT expectations, the Auditor flags the node as *Failing* or *Byzantine*.
+*   **The Governor (Accountability):** Executes decentralized governance. When Byzantine behavior is proven, the Governor applies graded slashing rules (minor, major, or total revocation of authority) and dynamically adjusts the BFT quorum thresholds ($2f+1$) to safeguard the registry's liveness.
+
+### 2. Spatiotemporal Trust Manifolds
+Reputation in Epicue is modeled as a continuous spatiotemporal manifold rather than a static score:
+*   **Spatial Dimension:** A node’s trust expands across multiple service domains (Health, Education, Agriculture) only when verified by consensus.
+*   **Temporal Dimension:** Honest history increases a node's trust score, while inactivity triggers a mathematical decay.
+*   **Safety Floor:** A hardcoded reputation floor ($R_{floor} = 40$) ensures that recovering nodes are kept under review and prevents compromised nodes from regaining full consensus rights without governance override.
+
+### 3. Hybrid STARK Coprocessing (Erlang + Cairo)
+To keep on-chain execution costs low while supporting heavy auditing algorithms:
+*   **Off-Chain Analysis:** An Erlang-based coprocessor daemon (`daemon/auditor.erl`) continuously polls the Starknet JSON-RPC node. It performs statistical anomaly detection and runs Cairo-based auditing scripts on historical ledger data.
+*   **Proof Generation:** When divergence is detected, the daemon executes a local STARK prover (e.g., the Stone Prover) to generate a cryptographic proof of Byzantine behavior.
+*   **Cheap On-Chain Verification:** The daemon submits the STARK proof to the registry's `claim_security_bounty` endpoint. The on-chain Triad modules verify the proof for a fraction of the cost of full re-execution and distribute a bounty reward to the auditor.
+
+### 4. Layer 2 Paymaster & Sponsored Transactions
+To insulate municipal operators and citizens from Layer 1 gas volatility, Epicue uses Starknet's native Account Abstraction:
+*   **Fee Delegation:** Sponsors fund a centralized on-chain Paymaster contract and whitelist users. When a whitelisted user submits a record, the validator hook handles gas payment using the sponsor's pool.
+*   **99.9% Cost Reduction:** By utilizing Starknet post-Dencun (EIP-4844 data blobs), a mid-sized municipality processing 15,000 transactions/month incurs less than **$300 USD/month** in L2 gas fees, compared to over **$30,000 USD/month** on an EVM Layer 1.
+
+---
+
+## FATE Alignment & UN SDGs
+
+Epicue maps on-chain cryptographic assertions directly to the United Nations Sustainable Development Goals (SDGs):
+
+| Index Metric | SDG Target | Cairo Mechanism |
+| :--- | :--- | :--- |
+| **Digital Reach Index (DRI)** | **SDG 10 (Reduced Inequalities)** | Tracks equity of public service coverage and access across geographic zones. |
+| **Green Stature Index** | **SDG 12 (Responsible Consumption)** | Monitors industrial emission thresholds and publishes verified compliance logs. |
+| **FATE Compliance Score** | **SDG 16 (Peace, Justice, & Strong Institutions)** | Dynamically calculated score mapping registry health, node honesty, and slashing events. |
+
+---
 
 ## Package Hierarchy
-The codebase is structured into logical layers to facilitate inter-institutional scale-up:
 
 ```text
-├── src/                # Cairo Core Implementation
-│   ├── core/           # Fundamental Logic (Access, Metadata, Types)
-│   ├── triad/          # The Epicue Triad (Validator, Auditor, Governor)
-│   ├── research/       # Scientific Productivity (BFT Peer Review, Methodology)
-│   ├── social/         # Equity & Inclusion (DRI, Reputation, Bounty)
-│   └── metrics/        # High-Level Analytics (Sustainability Ledger)
+├── src/                # Cairo Core Smart Contracts (Starknet)
+│   ├── core/           # Core registries, paymaster, access control, and types
+│   ├── triad/          # The Triad Engine (Validator, Auditor, Governor)
+│   ├── research/       # Scientific consensus, BFT review, and methodologies
+│   ├── social/         # Equity indices, reputation dynamics, and bounties
+│   └── metrics/        # Sustainability ledgers and UN SDG index calculation
 ├── daemon/             # Erlang Coprocessor (Off-chain STARK Prover Host)
 ├── scripts/            # Orchestration Shell Scripts (Setup, Devnet, Portal)
-├── tests/              # Byzantine Resilience & Performance Tests
-└── portal/             # Vite Client
+├── tests/              # Byzantine Resilience & Performance Test Suite
+├── portal/             # React/Vite Dashboard Frontend
+└── deployment/         # Environment files and contract deployment scripts
 ```
 
-## Institutional Portal
-
-The Epicue Registry Portal provides a high-fidelity interface for institutional stakeholders to interact with the Starknet-native BFT registry.
-
-![Registry Dashboard](portal/docs/screenshots/registry_home.png)
-
-![Governance Interface](portal/docs/screenshots/governance_tab.png)
-
-![Auditor Integrity Monitor](portal/docs/screenshots/auditor_tab.png)
-
-## Scientific Metrics & SDGs
-Epicue translates UN Sustainable Development Goals (SDGs) into STARK-proven metrics:
-- **Digital Reach Index (DRI)**: Measures the social equity of public services (SDG 10).
-- **Green Stature Index**: Tracks longitudinal sustainability in manufacturing sectors like Steel Mills (SDG 12).
-- **FATE Compliance Score**: A real-time measure of institutional accountability (SDG 16).
+---
 
 ## Getting Started
 
-### Project Setup
-Initialize the environment, install dependencies, and run initial verification. The setup script will automatically detect your OS/architecture, download the Kubo (IPFS) binary locally, and initialize an isolated IPFS repository at `.ipfs/` in the workspace:
+### 1. Project Setup
+Initialize the development environment and local IPFS repository:
 ```bash
 chmod +x scripts/setup.sh
 ./scripts/setup.sh
 ```
 
-### Local Development
-To run the entire local development stack (Starknet Devnet, local IPFS Daemon, contract deployment, test data population, the ZK Coprocessor daemon, and the Web Portal) with a single command:
+### 2. Run Local Development Stack
+Spin up the Starknet local devnet, IPFS daemon, contract compiler, coprocessor, and the Web Portal UI with a single command:
 ```bash
 ./scripts/run_local.sh
 ```
-The portal will be available at `http://localhost:3001`.
+*The portal will be available at `http://localhost:3001`.*
 
-This script starts all required background processes (including the isolated IPFS node) and launches the portal. To shut down all services cleanly, simply press `Ctrl+C` in the terminal window.
-
-### Public Network / Decoupled Deployment
-To connect the stack to a public Starknet network (e.g. Sepolia testnet or Mainnet):
-1. **Configure and deploy**:
-   ```bash
-   cp deployment/sepolia.env.template deployment/.env
-   # Edit deployment/.env with your RPC URL, account address, and keystore path
-   ./deployment/deploy_sepolia.sh
-   ```
-2. **Start the portal and daemon**:
-   ```bash
-   ./scripts/run_public.sh
-   ```
-   The portal will be available at `http://localhost:3001` and is connected to the public Starknet network contract. To shut down cleanly, simply press `Ctrl+C`.
-
-### Detailed Walkthrough
-See the [Tutorial Guide](docs/Tutorial.md) for a step-by-step walkthrough of institutional features.
-
-### Verifiable Use Cases
-See the [Verifiable Use Cases Guide](docs/Usecases.md) for a detailed technical description of the domain-specific data structures and FATE alignment matrices.
-
-### Evaluation & Datasets
-For the raw datasets and `snforge` simulation logs utilized for the manuscript evaluation, please see the [Evaluation Datasets](data/README.md). All artifacts contained within were derived directly from local test executions.
-
-### Deployment
-
-Epicue supports a unified deployment architecture for both local and public targets. See the [Deployment Guide](docs/Deployment.md) or the [Deployment Architecture](docs/README.md) for a detailed graphical overview and instructions.
-
-1. **Configure Environment**: Choose your target.
-   ```bash
-   cp deployment/sepolia.env.template deployment/.env
-   # Edit deployment/.env with your secrets
-   ```
-
-2. **Run Deployment Script**: Ensure your account is funded and your keystore is accessible.
-   ```bash
-   chmod +x deployment/deploy_sepolia.sh
-   ./deployment/deploy_sepolia.sh
-   ```
-
-## Security, Byzantine Resilience, & ZK Coprocessors
-The framework enforces a rigorous $n=3f+1$ Byzantine Fault Tolerance model. Security audits are driven by a hybrid **ZK Coprocessor Architecture**:
-- **Off-Chain Proving**: An Erlang-based daemon (`daemon/auditor.erl`) continuously polls the Starknet RPC, running heavy statistical analysis on institutional records to detect anomalies. Upon detection, it triggers a local Cairo program to generate a cryptographic STARK proof.
-- **On-Chain Verification**: The daemon submits this proof via the `claim_security_bounty` transaction to the Epicue Registry. The on-chain Triad modules cheaply verify the STARK proof and apply the appropriate institutional slashing.
-- **Manual Fallback**: Institutional watchdogs can bypass the automated daemon and manually trigger the slashing sequence via the Web Portal UI by providing the malicious address, the empirically calculated **Deviation \%**, the **Total Reviews** sample size, and the corresponding **Off-chain STARK Proof Hash** (generated by downloading public ledger history, feeding it into a Cairo auditing algorithm, and executing a local STARK prover such as the Stone Prover).
-
-## Layer 2 Sponsored Transactions & Paymaster
-To support zero-gas submissions for resource-constrained or public utility nodes, Epicue integrates a decentralized Layer 2 transaction delegation mechanism:
-- **On-Chain Paymaster Delegation**: The smart contract exposes `fund_paymaster` and `register_sponsored_user` interfaces. When a whitelisted account initiates a transaction, the on-chain validation hook delegates fee deduction to the sponsor's pool in STRK/ETH.
-- **Off-Chain Settlement Models**: Sponsoring entities can recoup on-chain gas costs via off-chain invoicing (USD/EUR) or waive them entirely as public service incentives.
-- **Testing the Flow**: See the [Sponsor Console Tutorial](docs/Tutorial.md#d-testing-sponsored-transactions--paymaster-console) for step-by-step instructions on running the interactive execution simulator and executing Cairo unit tests locally.
+### 3. Connect to Public Networks (Sepolia Testnet)
+Configure environment variables and deploy:
+```bash
+cp deployment/sepolia.env.template deployment/.env
+# Edit deployment/.env with your RPC URL, account address, and private key
+./deployment/deploy_sepolia.sh
+./scripts/run_public.sh
+```
 
 ---
-*Strengthening citizens' trust through objective cryptographic guarantees.*
+
+## Manual Walkthrough & Verification
+
+For a complete manual verification of the Epicue engine, see the following guides:
+*   **[Step-by-Step Tutorial Guide](docs/Tutorial.md):** Learn how to setup local wallets, submit records, create governance proposals, slash Byzantine nodes, and test the sponsored transactions simulator.
+*   **[Verifiable Use Cases](docs/Usecases.md):** Deep-dive into the water registry, industrial green stature tracker, and educational reach records.
+*   **[Deployment Architecture Guide](docs/Deployment.md):** Detailed walkthrough of the Layer 2 smart contract deployment and network configuration.
