@@ -213,3 +213,81 @@ export const CONTRACT_ABI = [
     ],
   },
 ] as const;
+
+export const PAYMASTER_ADDRESS =
+  import.meta.env.VITE_PAYMASTER_ADDRESS || 
+  "0x05a76bc8120e212c72632b89e6ac24d5c6a2f0338ffd68d2311bb99359d7ff5";
+
+export const PAYMASTER_ABI = [
+  {
+    type: "impl",
+    name: "PaymasterImpl",
+    interface_name: "epicue_core::core::paymaster::IPaymaster",
+  },
+  {
+    type: "interface",
+    name: "epicue_core::core::paymaster::IPaymaster",
+    items: [
+      {
+        type: "function",
+        name: "get_sponsor_balance",
+        inputs: [{ name: "sponsor", type: "core::starknet::contract_address::ContractAddress" }],
+        outputs: [{ type: "core::integer::u256" }],
+        state_mutability: "view",
+      },
+      {
+        type: "function",
+        name: "fund_paymaster",
+        inputs: [
+          { name: "sponsor", type: "core::starknet::contract_address::ContractAddress" },
+          { name: "amount", type: "core::integer::u256" }
+        ],
+        outputs: [],
+        state_mutability: "external",
+      },
+      {
+        type: "function",
+        name: "validate_paymaster_transaction",
+        inputs: [
+          { name: "user", type: "core::starknet::contract_address::ContractAddress" },
+          { name: "target", type: "core::starknet::contract_address::ContractAddress" },
+          { name: "entry_point", type: "core::felt252" },
+          { name: "calldata", type: "core::array::Array<core::felt252>" }
+        ],
+        outputs: [{ type: "core::bool" }],
+        state_mutability: "view",
+      },
+      {
+        type: "function",
+        name: "charge_gas_fee",
+        inputs: [
+          { name: "sponsor", type: "core::starknet::contract_address::ContractAddress" },
+          { name: "gas_used", type: "core::integer::u256" }
+        ],
+        outputs: [],
+        state_mutability: "external",
+      },
+      {
+        type: "function",
+        name: "register_sponsored_user",
+        inputs: [
+          { name: "sponsor", type: "core::starknet::contract_address::ContractAddress" },
+          { name: "user", type: "core::starknet::contract_address::ContractAddress" }
+        ],
+        outputs: [],
+        state_mutability: "external",
+      },
+      {
+        type: "function",
+        name: "is_sponsored",
+        inputs: [
+          { name: "sponsor", type: "core::starknet::contract_address::ContractAddress" },
+          { name: "user", type: "core::starknet::contract_address::ContractAddress" }
+        ],
+        outputs: [{ type: "core::bool" }],
+        state_mutability: "view",
+      }
+    ]
+  }
+] as const;
+

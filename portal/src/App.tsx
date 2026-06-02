@@ -16,9 +16,13 @@ import {
   ExternalLink,
   ChevronRight,
   User,
-  Activity
+  Activity,
+  Coins,
+  Wallet,
+  Settings,
+  ArrowRightLeft
 } from 'lucide-react';
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from './lib/contract';
+import { CONTRACT_ABI, CONTRACT_ADDRESS, PAYMASTER_ABI, PAYMASTER_ADDRESS } from './lib/contract';
 
 // --- Utilities ---
 function decodeShortString(felt: string): string {
@@ -754,10 +758,227 @@ function AuditorSection() {
   );
 }
 
+function SponsorSection() {
+  const { address } = useAccount();
+  const [fundAmount, setFundAmount] = useState('');
+  const [newUser, setNewUser] = useState('');
+  const [simStatus, setSimStatus] = useState<string>('idle');
+  const [simStep, setSimStep] = useState<number>(0);
+
+  // Read current sponsor balance
+  const { data: balanceRaw, refetch: refetchBalance } = useReadContract({
+    abi: PAYMASTER_ABI,
+    address: PAYMASTER_ADDRESS as `0x${string}`,
+    functionName: 'get_sponsor_balance',
+    args: [address || '0x0'],
+  });
+
+  // Fund Paymaster tx
+  const { send: fundPaymaster, isPending: isFunding } = useSendTransaction({
+    calls: [
+      {
+        contractAddress: PAYMASTER_ADDRESS as `0x${string}`,
+        entrypoint: 'fund_paymaster',
+        calldata: [address || '0x0', fundAmount ? BigInt(fundAmount).toString() : '0', '0'], // u256 is passed as two felts (low, high)
+      }
+    ]
+  });
+
+  // Register Sponsored User tx
+  const { send: registerUser, isPending: isRegistering } = useSendTransaction({
+    calls: [
+      {
+        contractAddress: PAYMASTER_ADDRESS as `0x${string}`,
+        entrypoint: 'register_sponsored_user',
+        calldata: [address || '0x0', newUser],
+      }
+    ]
+  });
+
+  const sponsorBalance = balanceRaw ? Number(balanceRaw) : 0;
+
+  const runSimulation = () => {
+    setSimStatus('running');
+    setSimStep(1);
+    setTimeout(() => {
+      setSimStep(2);
+      setTimeout(() => {
+        setSimStep(3);
+        setTimeout(() => {
+          setSimStep(4);
+          setSimStatus('success');
+        }, 1500);
+      }, 1500);
+    }, 1500);
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans text-slate-800">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-900 font-sans tracking-tight">Paymaster Sponsor Console</h2>
+          <p className="text-slate-500 text-sm mt-1 font-medium">Verifiable Gas Sponsorship & Off-chain Settlement Policies</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Balance Card */}
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Coins className="w-24 h-24 text-slate-900" />
+          </div>
+          <p className="text-slate-500 text-sm font-medium mb-2 uppercase tracking-wider text-[10px]">Sponsor Gas Balance</p>
+          <h3 className="text-4xl font-bold text-violet-600 font-mono">{sponsorBalance} <span className="text-lg text-slate-500 font-sans font-bold">STRK</span></h3>
+          <div className="mt-4 flex items-center gap-2 text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Paymaster Contract Active
+          </div>
+        </div>
+
+        {/* Fund Paymaster Card */}
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h4 className="font-bold text-slate-900 mb-1">Deposit Gas Funds</h4>
+            <p className="text-xs text-slate-500 mb-4 font-medium">Fund your paymaster balance to sponsor user transactions.</p>
+          </div>
+          <div className="space-y-3">
+            <input
+              type="number"
+              value={fundAmount}
+              onChange={(e) => setFundAmount(e.target.value)}
+              placeholder="Amount (STRK)"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-violet-500/50 font-mono"
+            />
+            <button
+              onClick={() => { fundPaymaster(); setTimeout(() => refetchBalance(), 2000); }}
+              disabled={isFunding || !fundAmount}
+              className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
+            >
+              {isFunding ? 'Depositing...' : 'Deposit Funds'}
+            </button>
+          </div>
+        </div>
+
+        {/* Register Sponsored User Card */}
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h4 className="font-bold text-slate-900 mb-1">Whitelist User Account</h4>
+            <p className="text-xs text-slate-500 mb-4 font-medium">Authorize a researcher/auditor address for sponsored execution.</p>
+          </div>
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={newUser}
+              onChange={(e) => setNewUser(e.target.value)}
+              placeholder="User Address (0x...)"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-violet-500/50 font-mono"
+            />
+            <button
+              onClick={() => registerUser()}
+              disabled={isRegistering || !newUser}
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
+            >
+              {isRegistering ? 'Authorizing...' : 'Register User'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Simulator / Interactive Panel */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group">
+          <h3 className="text-xl font-bold mb-2 text-slate-900">Sponsored Execution Simulator</h3>
+          <p className="text-slate-500 text-sm mb-6 font-medium">Verify how accounts decouple validation from fee payment in real time.</p>
+          
+          <div className="space-y-4">
+            {simStatus === 'idle' && (
+              <button
+                onClick={runSimulation}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold hover:shadow-lg hover:shadow-violet-600/20 transition-all flex items-center justify-center gap-2"
+              >
+                <ArrowRightLeft className="w-5 h-5" /> Start Sponsored Transaction Simulation
+              </button>
+            )}
+
+            {simStatus === 'running' && (
+              <div className="space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <span className={`w-2 h-2 rounded-full ${simStep >= 1 ? 'bg-violet-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <span className={`text-xs font-semibold ${simStep >= 1 ? 'text-violet-700 font-bold' : 'text-slate-400'}`}>
+                    1. Initiating submission from auditor (gas fee: 0 STRK)
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`w-2 h-2 rounded-full ${simStep >= 2 ? 'bg-violet-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <span className={`text-xs font-semibold ${simStep >= 2 ? 'text-violet-700 font-bold' : 'text-slate-400'}`}>
+                    2. Starknet sequencer calling Paymaster validation hook
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`w-2 h-2 rounded-full ${simStep >= 3 ? 'bg-violet-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <span className={`text-xs font-semibold ${simStep >= 3 ? 'text-violet-700 font-bold' : 'text-slate-400'}`}>
+                    3. Validation approved; gas fee (0.005 ETH / 12.5 STRK) charged to sponsor balance
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`w-2 h-2 rounded-full ${simStep >= 4 ? 'bg-violet-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <span className={`text-xs font-semibold ${simStep >= 4 ? 'text-violet-700 font-bold' : 'text-slate-400'}`}>
+                    4. Transaction execution: record committed to the on-chain BFT registry
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {simStatus === 'success' && (
+              <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
+                <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider mb-3 font-sans">SUCCESS</span>
+                <h4 className="font-bold text-emerald-900 mb-1">Execution Sponsored Successfully!</h4>
+                <p className="text-xs text-emerald-700 mb-4 leading-relaxed font-sans font-medium">
+                  The data commitment was successfully finalized in the Cairo VM. Zero gas was paid by the submitting auditor; the fees were entirely covered by the Paymaster contract.
+                </p>
+                <button
+                  onClick={() => setSimStatus('idle')}
+                  className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all"
+                >
+                  Simulate Again
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Off-chain Settlement / Invoicing */}
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group flex flex-col justify-between">
+          <div>
+            <h3 className="text-xl font-bold mb-2 text-slate-900">Off-chain Settlement Policies</h3>
+            <p className="text-slate-500 text-sm mb-6 font-medium">Sponsoring organizations can configure corporate accounts or waivers.</p>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div>
+                <div className="text-xs font-bold text-slate-800">Off-Chain Invoice Billing</div>
+                <div className="text-[10px] text-slate-500 mt-0.5 font-medium">Participating institutions are billed monthly in USD/EUR.</div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-[9px] font-bold uppercase tracking-wider border border-blue-100">Configured</span>
+            </div>
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div>
+                <div className="text-xs font-bold text-slate-800">Public Interest Waiver</div>
+                <div className="text-[10px] text-slate-500 mt-0.5 font-medium">Academic/municipal partners have their gas fees 100% waived.</div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase tracking-wider border border-emerald-100">Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Main App ---
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'registry' | 'governance' | 'auditor'>('registry');
+  const [activeTab, setActiveTab] = useState<'registry' | 'governance' | 'auditor' | 'sponsor'>('registry');
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
@@ -772,7 +993,8 @@ export default function App() {
             {[
               { id: 'registry', icon: Database, label: 'Registry' },
               { id: 'governance', icon: Vote, label: 'Governance' },
-              { id: 'auditor', icon: ShieldCheck, label: 'Auditor' }
+              { id: 'auditor', icon: ShieldCheck, label: 'Auditor' },
+              { id: 'sponsor', icon: Settings, label: 'Sponsor' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -798,6 +1020,7 @@ export default function App() {
             />
           )}
           {activeTab === 'auditor' && <AuditorSection />}
+          {activeTab === 'sponsor' && <SponsorSection />}
         </main>
 
         <WalletModal isOpen={isWalletModalOpen} onClose={() => setIsWalletModalOpen(false)} />
