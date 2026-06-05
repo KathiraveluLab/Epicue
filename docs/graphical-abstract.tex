@@ -43,7 +43,7 @@
 \node[layer=clOrange] (auditor)   at ( 0,  -3.2) {Auditor};
 \node[layer=clTeal]   (governor)  at ( 2.8,-3.2) {Governor};
 \begin{pgfonlayer}{background}
-  \node[grpbox=clRed, fit=(validator)(auditor)(governor), label={[lbl,text=clRed]right:Epicue Triad}] (triad) {};
+  \node[grpbox=clRed, fit=(validator)(auditor)(governor), label={[lbl,text=clRed,yshift=-12pt]right:Epicue Triad}] (triad) {};
 \end{pgfonlayer}
 
 %% ── Row 3 ──────────────────────────────────────────────────────────────────
@@ -109,10 +109,12 @@
 \end{pgfonlayer}
 
 %% ── Deployment ─────────────────────────────────────────────────────────────
-\node[mod=clGray] (sepolia) at (6.5,-1.6) {Sepolia};
-\node[mod=clGray, above=4pt of sepolia] (devnet) {Devnet};
+\node[mod=clGray, minimum width=3.0cm] (devnet)     at (6.5,-0.6) {Local Devnet};
+\node[mod=clGray, minimum width=3.0cm, below=4pt of devnet] (fedkatana) {Federated Katana};
+\node[mod=clGray, minimum width=3.0cm, below=4pt of fedkatana] (madara) {Madara Appchain};
+\node[mod=clGray, minimum width=3.0cm, below=4pt of madara] (sepolia) {Public Starknet};
 \begin{pgfonlayer}{background}
-  \node[grpbox=clGray, fit=(devnet)(sepolia), label={[lbl,text=clGray]above:Deploy}] (deploy) {};
+  \node[grpbox=clGray, fit=(devnet)(sepolia), label={[lbl,text=clGray]above:Deployment}] (deploy) {};
 \end{pgfonlayer}
 
 %% ── Edges ──────────────────────────────────────────────────────────────────
