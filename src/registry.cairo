@@ -1097,14 +1097,17 @@ mod Registry {
                 self.authorities.write(new_authority, true);
                 self.authority_count.write(self.authority_count.read() + 1);
                 
-                // Initialize reputation if not exists
+                // Initialize or reset reputation to a compliant clean slate
                 let mut rep = self.reputations.read(new_authority);
-                if rep.trust_multiplier == 0 {
-                    rep.trust_multiplier = 1;
-                    rep.institution = new_authority;
-                    rep.status = NodeStatus::Compliant;
-                    self.reputations.write(new_authority, rep);
-                }
+                rep.trust_multiplier = 1;
+                rep.reputation_credits = 0;
+                rep.bounty_credits = 0;
+                rep.spatiotemporal_trust = 0;
+                rep.consecutive_active_duration = 0;
+                rep.institution = new_authority;
+                rep.status = NodeStatus::Compliant;
+                rep.last_activity_timestamp = get_block_timestamp();
+                self.reputations.write(new_authority, rep);
             }
         }
 

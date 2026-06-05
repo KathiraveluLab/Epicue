@@ -227,3 +227,41 @@ fn test_multiplier_growth_and_reset() {
     assert(rep_reset.trust_multiplier == 1, 'Multiplier not reset to 1');
 }
 
+#[test]
+fn test_rehabilitation_reinstatement() {
+    let auth: ContractAddress = 0x111.try_into().unwrap();
+    let dispatcher = deploy_registry(auth);
+
+    let target: ContractAddress = 0x222.try_into().unwrap();
+
+    // 1. Add target as authority via governance (n=1, auto-approves)
+    start_cheat_caller_address(dispatcher.contract_address, auth);
+    let prop_add = dispatcher.propose_action(target, 'ADD_AUTH');
+    dispatcher.execute_proposal(prop_add);
+
+    assert(dispatcher.is_authority(target), 'Should be authority');
+    let rep_initial = dispatcher.get_institution_reputation(target);
+    assert(rep_initial.trust_multiplier == 1, 'Initial multiplier not 1');
+    assert(rep_initial.reputation_credits == 0, 'Initial credits not 0');
+
+    // 2. Simulate critical fault / byzantine state (slash Target)
+    dispatcher.claim_security_bounty(target, 85, 6, 0x123); // Consent deviation 85, total reviews 6 -> Critical fault (severity=3)
+    
+    // Check that target is isolated
+    assert(!dispatcher.is_authority(target), 'Target should be isolated');
+    let rep_slashed = dispatcher.get_institution_reputation(target);
+    assert(rep_slashed.reputation_credits == 0, 'Credits not slashed to 0');
+    
+    // 3. Re-add target as authority (Reinstatement)
+    let prop_readd = dispatcher.propose_action(target, 'ADD_AUTH');
+    dispatcher.execute_proposal(prop_readd);
+    
+    // Verify target is reinstated with clean slate
+    assert(dispatcher.is_authority(target), 'Target should be reinstated');
+    let rep_reinstated = dispatcher.get_institution_reputation(target);
+    assert(rep_reinstated.trust_multiplier == 1, 'Reinstated mult not 1');
+    assert(rep_reinstated.reputation_credits == 0, 'Reinstated credits not 0');
+    // rep_reinstated.status should be NodeStatus::Compliant (which evaluates to Compliant under Serde/Store)
+}
+
+
