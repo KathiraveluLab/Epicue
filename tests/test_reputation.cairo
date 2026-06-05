@@ -165,3 +165,65 @@ fn test_member_unauthorized_promotion() {
     start_cheat_caller_address(dispatcher.contract_address, unauthorized);
     dispatcher.promote_researcher(researcher);
 }
+
+#[test]
+fn test_multiplier_growth_and_reset() {
+    let auth: ContractAddress = 0x111.try_into().unwrap();
+    let dispatcher = deploy_registry(auth);
+
+    let t0 = 100;
+    start_cheat_block_timestamp(dispatcher.contract_address, t0);
+    start_cheat_caller_address(dispatcher.contract_address, auth);
+    
+    // 1. Initial record
+    let record1 = EpicueRecord {
+        subject_id: 0x1,
+        domain: domains::HEALTHCARE,
+        category: 'test',
+        severity: 5,
+        timestamp: t0,
+        data_hash: 0xabc
+    };
+    dispatcher.submit_epicue_record(record1);
+    
+    let rep_initial = dispatcher.get_institution_reputation(auth);
+    assert(rep_initial.trust_multiplier == 1, 'Initial multiplier not 1');
+
+    // 2. Active participation: submit record after 15 days (less than DECAY_PERIOD 30 days)
+    let t1 = t0 + (2592000 / 2); // 15 days
+    start_cheat_block_timestamp(dispatcher.contract_address, t1);
+    let record2 = EpicueRecord {
+        subject_id: 0x2,
+        domain: domains::HEALTHCARE,
+        category: 'test',
+        severity: 5,
+        timestamp: t1,
+        data_hash: 0xabc
+    };
+    dispatcher.submit_epicue_record(record2);
+
+    // 3. Active participation: submit record after another 16 days (consecutive duration > 30 days)
+    let t2 = t1 + (2592000 / 2) + 86400; // 16 days
+    start_cheat_block_timestamp(dispatcher.contract_address, t2);
+    let record3 = EpicueRecord {
+        subject_id: 0x3,
+        domain: domains::HEALTHCARE,
+        category: 'test',
+        severity: 5,
+        timestamp: t2,
+        data_hash: 0xabc
+    };
+    dispatcher.submit_epicue_record(record3);
+
+    let rep_grown = dispatcher.get_institution_reputation(auth);
+    assert(rep_grown.trust_multiplier == 2, 'Multiplier did not grow to 2');
+
+    // 4. Inactivity: wait 91 days (exceeds TRUST_RESET_PERIOD of 90 days)
+    let t3 = t2 + 7776000 + 1000;
+    start_cheat_block_timestamp(dispatcher.contract_address, t3);
+    
+    // Read reputation (triggers on-the-fly reset check)
+    let rep_reset = dispatcher.get_institution_reputation(auth);
+    assert(rep_reset.trust_multiplier == 1, 'Multiplier not reset to 1');
+}
+

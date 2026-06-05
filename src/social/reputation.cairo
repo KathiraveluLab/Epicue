@@ -17,18 +17,23 @@ pub struct InstitutionReputation {
     pub bounty_credits: u64, // Security contributions
     pub spatiotemporal_trust: u128, // Double Integral: ∫ ∫ τ(p, t) dp dt
     pub status: NodeStatus, // Flagged via Trust Gradient Divergence (∇S)
+    pub consecutive_active_duration: u64, // Tracks consecutive active participation time
 }
 
 /// Dynamic Trust Level (T(t) = ∫ τ(p, t) dp)
 /// Aggregates trust across the entire policy domain space (P).
 pub fn calculate_dynamic_trust_level(rep: @InstitutionReputation, green_stature: u64) -> u64 {
+    let multiplier = if *rep.trust_multiplier == 0 { 1 } else { *rep.trust_multiplier };
     let base_trust = (*rep.reputation_credits) + green_stature + (*rep.bounty_credits);
-    base_trust * (*rep.trust_multiplier).into()
+    base_trust * multiplier.into()
 }
 
 /// Update Institutional Trust as a Spatiotemporal Double Integral
 /// S = ∫ ∫ τ(p, t) dp dt ≈ Σ T_i * Δt_i
 pub fn update_spatiotemporal_trust(ref rep: InstitutionReputation, green_stature: u64, current_timestamp: u64) {
+    if rep.trust_multiplier == 0 {
+        rep.trust_multiplier = 1;
+    }
     if rep.last_activity_timestamp == 0 {
         rep.last_activity_timestamp = current_timestamp;
         return;
@@ -102,31 +107,58 @@ pub const DECAY_PERIOD: u64 = 2592000; // 30 days
 pub const TRUST_RESET_PERIOD: u64 = 7776000; // 90 days
 
 /// Calculates and applies reputation decay based on inactivity, respecting a minimum floor
+/// Also implements dynamic trust multiplier recovery for active participation.
 pub fn apply_reputation_decay(ref reputation: InstitutionReputation, current_timestamp: u64, min_floor: u64) {
+    if reputation.trust_multiplier == 0 {
+        reputation.trust_multiplier = 1;
+    }
     if reputation.last_activity_timestamp == 0 { return; }
     if current_timestamp <= reputation.last_activity_timestamp { return; }
-    if reputation.reputation_credits <= min_floor { return; }
 
     let elapsed = current_timestamp - reputation.last_activity_timestamp;
     
     // Multiplier reset for extreme inactivity
     if elapsed > TRUST_RESET_PERIOD {
         reputation.trust_multiplier = 1;
+        reputation.consecutive_active_duration = 0;
+    } else {
+        // Accumulate active duration if no decay/inactivity has broken the streak
+        if elapsed < DECAY_PERIOD {
+            reputation.consecutive_active_duration += elapsed;
+            let growth_periods = reputation.consecutive_active_duration / DECAY_PERIOD;
+            if growth_periods > 0 {
+                let max_multiplier: u8 = 5;
+                if reputation.trust_multiplier < max_multiplier {
+                    let new_mult = reputation.trust_multiplier + growth_periods.try_into().unwrap_or(0);
+                    if new_mult > max_multiplier {
+                        reputation.trust_multiplier = max_multiplier;
+                    } else {
+                        reputation.trust_multiplier = new_mult;
+                    }
+                }
+                reputation.consecutive_active_duration %= DECAY_PERIOD;
+            }
+        }
     }
 
     // Credits decay: 5% per 30 days
     let periods = elapsed / DECAY_PERIOD;
     if periods > 0 {
-        let decay_amount = (reputation.reputation_credits * 5 * periods) / 100;
+        // Streak is broken by decay period inactivity
+        reputation.consecutive_active_duration = 0;
         
-        if decay_amount >= reputation.reputation_credits {
-            reputation.reputation_credits = min_floor;
-        } else {
-            let potential_new_credits = reputation.reputation_credits - decay_amount;
-            if potential_new_credits < min_floor {
+        if reputation.reputation_credits > min_floor {
+            let decay_amount = (reputation.reputation_credits * 5 * periods) / 100;
+            
+            if decay_amount >= reputation.reputation_credits {
                 reputation.reputation_credits = min_floor;
             } else {
-                reputation.reputation_credits = potential_new_credits;
+                let potential_new_credits = reputation.reputation_credits - decay_amount;
+                if potential_new_credits < min_floor {
+                    reputation.reputation_credits = min_floor;
+                } else {
+                    reputation.reputation_credits = potential_new_credits;
+                }
             }
         }
     }
