@@ -13,9 +13,7 @@ echo "--- Initializing Deployment: Target=$TARGET ---"
 # Load environment
 if [ "$TARGET" == "local" ]; then
     source deployment/local.env
-    # Ensure local account is imported into sncast
     echo "Importing local account..."
-    # Global flags like --accounts-file MUST come before the subcommand
     sncast --accounts-file deployment/accounts.json account import \
         --url "$STARKNET_RPC" \
         --name local \
@@ -24,6 +22,38 @@ if [ "$TARGET" == "local" ]; then
         --type oz \
         --silent 2>/dev/null || true
     SNCAST_GLOBAL="--account local --accounts-file deployment/accounts.json"
+elif [ "$TARGET" == "federated" ]; then
+    if [ -f "deployment/federated.env" ]; then
+        source deployment/federated.env
+    else
+        echo "Error: deployment/federated.env not found. Please create it from deployment/federated.env.template."
+        exit 1
+    fi
+    echo "Importing federated account..."
+    sncast --accounts-file deployment/accounts.json account import \
+        --url "$STARKNET_RPC" \
+        --name federated \
+        --address "$STARKNET_ACCOUNT" \
+        --private-key "$STARKNET_PRIVATE_KEY" \
+        --type oz \
+        --silent 2>/dev/null || true
+    SNCAST_GLOBAL="--account federated --accounts-file deployment/accounts.json"
+elif [ "$TARGET" == "madara" ]; then
+    if [ -f "deployment/madara.env" ]; then
+        source deployment/madara.env
+    else
+        echo "Error: deployment/madara.env not found. Please create it from deployment/madara.env.template."
+        exit 1
+    fi
+    echo "Importing Madara admin account..."
+    sncast --accounts-file deployment/accounts.json account import \
+        --url "$STARKNET_RPC" \
+        --name madara \
+        --address "$STARKNET_ACCOUNT" \
+        --private-key "$STARKNET_PRIVATE_KEY" \
+        --type oz \
+        --silent 2>/dev/null || true
+    SNCAST_GLOBAL="--account madara --accounts-file deployment/accounts.json"
 elif [ "$TARGET" == "public" ]; then
     if [ -f "deployment/public.env" ]; then
         source deployment/public.env
@@ -36,26 +66,28 @@ elif [ "$TARGET" == "public" ]; then
         SNCAST_GLOBAL="$SNCAST_GLOBAL --password-file $STARKNET_PASSWORD_FILE"
     fi
 else
-    echo "Error: Unknown deployment target '$TARGET'. Use 'local' or 'public'."
+    echo "Error: Unknown deployment target '$TARGET'. Use 'local', 'federated', 'madara', or 'public'."
     exit 1
 fi
 
 echo "--- Building Epicue Framework ---"
 scarb build
 
-# Function to check local node
-check_local_node() {
-    if [ "$TARGET" == "local" ]; then
-        if ! curl -s $STARKNET_RPC > /dev/null; then
-            echo "Error: Local node (Devnet) not detected at $STARKNET_RPC."
-            echo "Please start the node first in a separate terminal using:"
-            echo "  ./run_devnet.sh"
-            exit 1
+# Function to check local/remote node connectivity
+check_node_connectivity() {
+    if ! curl -s -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"starknet_blockNumber","params":[],"id":1}' $STARKNET_RPC > /dev/null; then
+        echo "Error: Starknet RPC node not detected or unresponsive at $STARKNET_RPC."
+        if [ "$TARGET" == "local" ]; then
+            echo "Please start the local devnet node first in a separate terminal using:"
+            echo "  ./scripts/run_local.sh"
+        else
+            echo "Please verify that your node is running and the RPC URL is correct in your target env file."
         fi
+        exit 1
     fi
 }
 
-check_local_node
+check_node_connectivity
 
 echo "--- Declaring Registry Contract ---"
 # Note: sncast global flags (account, accounts-file) go BEFORE subcommand

@@ -4,19 +4,35 @@ Epicue supports a unified deployment architecture that allows for seamless trans
 
 ## Deployment Targets
 
-The system identifies two primary deployment targets, switchable via the `EPICUE_DEPLOY_TARGET` environment variable.
+The system supports four distinct deployment topologies to accommodate different institutional requirements, gas cost policies, and trust assumptions.
 
-### 1. Local (Katana/Devnet)
-Professional-grade local simulation for zero-cost parity testing.
+### 1. Local Simulation (Katana/Devnet)
+Professional-grade local simulation for zero-cost parity testing during development.
 - **RPC**: `http://localhost:5050`
-- **Cost**: 0 (uses pre-funded accounts)
-- **Speed**: Instant finality.
+- **Gas Cost**: None (uses pre-funded developer accounts).
+- **Speed**: Instant block finality on-demand.
+- **Target Value**: `local` (default).
 
-### 2. Public (Starknet Sepolia)
-Live testnet environment for institutional verification and integration.
-- **RPC**: Variable (Alchemy, Infura, Blast).
-- **Cost**: Requires Sepolia ETH.
-- **Authentication**: Requires a Starkli/Foundry compatible keystore.
+### 2. Federated Devnet (Katana)
+A persistent, private, zero-gas consortium network hosted across secure institutional servers (typically behind a shared VPN).
+- **RPC**: Private domain (e.g., `http://epicue-node.consortium.org:5050`).
+- **Gas Cost**: None (uses pre-funded institutional keys managed via ACLs).
+- **Speed**: Instant or configured periodic block finality.
+- **Target Value**: Custom RPC endpoint in `local.env`.
+
+### 3. Private Madara Appchain (Production-grade L3/L2)
+An enterprise-grade, customizable Starknet-compatible appchain sequencer built on the Substrate framework.
+- **RPC**: Custom sequencer endpoint.
+- **Gas Cost**: Configurable to zero gas, or uses a custom free-to-mint utility token to mitigate spam.
+- **Data Availability**: Uses a Data Availability Committee (DAC) or private DA (e.g., Celestia) to eliminate public L1 blob costs.
+- **Target Value**: Custom RPC configured in `public.env`.
+
+### 4. Public Starknet (Sepolia Testnet / Mainnet)
+The live public Starknet network, utilizing on-chain Paymasters to achieve gasless user interactions via institutional sponsorship.
+- **RPC**: Public node providers (Alchemy, Infura, Blast).
+- **Gas Cost**: Paid in ETH or STRK on-chain (delegated to the Paymaster contract pool).
+- **Authentication**: Requires a Starkli/Foundry compatible secure keystore.
+- **Target Value**: `public`.
 
 ## Deployment Procedure
 
@@ -25,13 +41,27 @@ Live testnet environment for institutional verification and integration.
 - Python 3.9+ (if using local devnet)
 
 ### Unified Execution
-The `deployment/deploy.sh` script handles the complexity of environment switching automatically.
+The `deployment/deploy.sh` script handles the complexity of environment switching automatically. Ensure you copy and configure the correct env template before running:
 
 ```bash
-# To deploy locally (Default)
+# 1. To deploy locally (Default local simulation)
 ./deployment/deploy.sh
 
-# To deploy to public Sepolia
+# 2. To deploy to a Federated Devnet (Consortium Network)
+cp deployment/federated.env.template deployment/federated.env
+# (Edit deployment/federated.env with your consortium RPC and account details)
+export EPICUE_DEPLOY_TARGET=federated
+./deployment/deploy.sh
+
+# 3. To deploy to a Madara Appchain
+cp deployment/madara.env.template deployment/madara.env
+# (Edit deployment/madara.env with your Madara sequencer RPC and account details)
+export EPICUE_DEPLOY_TARGET=madara
+./deployment/deploy.sh
+
+# 4. To deploy to Public Starknet (Sepolia/Mainnet)
+cp deployment/sepolia.env.template deployment/public.env
+# (Edit deployment/public.env with your public RPC URL and keystore details)
 export EPICUE_DEPLOY_TARGET=public
 ./deployment/deploy.sh
 ```
