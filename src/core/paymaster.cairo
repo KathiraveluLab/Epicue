@@ -26,6 +26,7 @@ pub mod Paymaster {
     struct Storage {
         sponsor_balances: Map<ContractAddress, u256>,
         sponsored_users: Map<(ContractAddress, ContractAddress), bool>,
+        user_sponsor: Map<ContractAddress, ContractAddress>,
     }
 
     #[event]
@@ -75,9 +76,15 @@ pub mod Paymaster {
             entry_point: felt252, 
             calldata: Span<felt252>
         ) -> bool {
-            // Find if user is sponsored by checking our map
-            // In a mock validator, we approve if there is at least one sponsor that sponsored the user
-            true
+            let sponsor = self.user_sponsor.read(user);
+            if sponsor == starknet::contract_address_const::<0>() {
+                return false;
+            }
+            if !self.sponsored_users.read((sponsor, user)) {
+                return false;
+            }
+            let balance = self.sponsor_balances.read(sponsor);
+            balance > 0
         }
 
         fn charge_gas_fee(ref self: ContractState, sponsor: ContractAddress, gas_used: u256) {
@@ -89,6 +96,7 @@ pub mod Paymaster {
         fn register_sponsored_user(ref self: ContractState, sponsor: ContractAddress, user: ContractAddress) {
             assert(get_caller_address() == sponsor, 'Only sponsor can register');
             self.sponsored_users.write((sponsor, user), true);
+            self.user_sponsor.write(user, sponsor);
         }
 
         fn is_sponsored(self: @ContractState, sponsor: ContractAddress, user: ContractAddress) -> bool {
