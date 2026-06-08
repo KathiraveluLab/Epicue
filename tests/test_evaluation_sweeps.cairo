@@ -1,7 +1,7 @@
 use epicue_core::registry::{IRegistryDispatcher, IRegistryDispatcherTrait};
 use epicue_core::triad::governor::{proposal_status};
 use epicue_core::triad::governor::actions;
-use epicue_core::core::types::{domains, GeologicalRecord, WaterRecord, IndustrialRecord, EducationRecord};
+use epicue_core::core::types::{domains, GeologicalRecord, WaterRecord, IndustrialRecord, EducationRecord, HealthRecord};
 use starknet::ContractAddress;
 use snforge_std::{declare, ContractClassTrait, DeclareResult, start_cheat_caller_address, stop_cheat_caller_address};
 
@@ -120,6 +120,26 @@ fn test_submit_geology_gas() {
 
     let saved_geo = dispatcher.get_geological_record(0x201);
     assert(saved_geo.latitude == 4100, 'Geological record mismatch');
+}
+
+#[test]
+fn test_submit_health_gas() {
+    let auth1: ContractAddress = 0x101.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+
+    let health_record = HealthRecord {
+        patient_id: 0x205,
+        service_category: 'routine_check',
+        severity: 3,
+        timestamp: 1040,
+        data_hash: 0xabcde
+    };
+    start_cheat_caller_address(dispatcher.contract_address, auth1);
+    dispatcher.submit_health_record(health_record);
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    let saved_health = dispatcher.get_health_record(0x205);
+    assert(saved_health.severity == 3, 'Health record mismatch');
 }
 
 #[test]
