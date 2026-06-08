@@ -181,3 +181,58 @@ fn test_submit_education_gas() {
     let saved_edu = dispatcher.get_education_record(0x204);
     assert(saved_edu.integrity_index == 92, 'Education record mismatch');
 }
+
+#[test]
+fn test_onboard_step_2() {
+    let auth1: ContractAddress = 0x101.try_into().unwrap();
+    let auth2: ContractAddress = 0x102.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+    let mut list = array![auth1];
+    onboard_new_authority(dispatcher, auth1, auth2, list.clone());
+}
+
+#[test]
+fn test_onboard_step_3() {
+    let auth1: ContractAddress = 0x101.try_into().unwrap();
+    let auth2: ContractAddress = 0x102.try_into().unwrap();
+    let auth3: ContractAddress = 0x103.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+    let mut list = array![auth1];
+    onboard_new_authority(dispatcher, auth1, auth2, list.clone());
+    list.append(auth2);
+    onboard_new_authority(dispatcher, auth1, auth3, list.clone());
+}
+
+#[test]
+fn test_onboard_step_4() {
+    let auth1: ContractAddress = 0x101.try_into().unwrap();
+    let auth2: ContractAddress = 0x102.try_into().unwrap();
+    let auth3: ContractAddress = 0x103.try_into().unwrap();
+    let auth4: ContractAddress = 0x104.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+    let mut list = array![auth1];
+    onboard_new_authority(dispatcher, auth1, auth2, list.clone());
+    list.append(auth2);
+    onboard_new_authority(dispatcher, auth1, auth3, list.clone());
+    list.append(auth3);
+    onboard_new_authority(dispatcher, auth1, auth4, list.clone());
+}
+
+#[test]
+fn test_onboard_step_5() {
+    let auth1: ContractAddress = 0x101.try_into().unwrap();
+    let auth2: ContractAddress = 0x102.try_into().unwrap();
+    let auth3: ContractAddress = 0x103.try_into().unwrap();
+    let auth4: ContractAddress = 0x104.try_into().unwrap();
+    let auth5: ContractAddress = 0x105.try_into().unwrap();
+    let dispatcher = deploy_registry(auth1);
+    let mut list = array![auth1];
+    onboard_new_authority(dispatcher, auth1, auth2, list.clone());
+    list.append(auth2);
+    onboard_new_authority(dispatcher, auth1, auth3, list.clone());
+    list.append(auth3);
+    onboard_new_authority(dispatcher, auth1, auth4, list.clone());
+    list.append(auth4);
+    onboard_new_authority(dispatcher, auth1, auth5, list.clone());
+}
+
